@@ -1,0 +1,20 @@
+[package]
+name = "bevy_rts_camera"
+version = "0.1.0"
+authors = ["Plonq"]
+edition = "2021"
+description = "An RTS-style camera for Bevy"
+keywords = ["gamedev", "bevy", "rts", "camera"]
+categories = ["game-development"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Plonq/bevy_rts_camera"
+homepage = "https://github.com/Plonq/bevy_rts_camera"
+readme = "README.md"
+
+[dependencies]
+bevy = { version = "0.13", default-features = false, features = ["bevy_render"] }
+bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast.git", branch = "bevy-0.13" }
+
+[dev-dependencies]
+bevy = { version = "0.13" }
+bevy_panorbit_camera = "0.14"
