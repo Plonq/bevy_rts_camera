@@ -2,9 +2,11 @@
 // #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
-use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
+use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy_mod_raycast::prelude::{Raycast, RaycastSettings};
+use std::f32::consts::PI;
 
 /// Bevy plugin that contains the systems for controlling `RtsCamera` components.
 /// # Example
@@ -27,11 +29,12 @@ impl Plugin for RtsCameraPlugin {
             // todo: optimize
             (
                 zoom,
-                set_look_direction,
-                lateral_movement,
+                update_eye_transform,
+                move_laterally,
                 follow_ground,
-                move_towards_target,
+                rotate,
                 debug,
+                move_towards_target,
             )
                 .chain()
                 .in_set(RtsCameraSystemSet),
@@ -81,6 +84,7 @@ pub struct RtsCamera {
     pub key_down: KeyCode,
     pub key_left: KeyCode,
     pub key_right: KeyCode,
+    pub button_rotate: MouseButton,
     pub speed: f32,
     pub target: Vec3,
     pub zoom: f32,
@@ -98,12 +102,13 @@ impl Default for RtsCamera {
             key_down: KeyCode::KeyS,
             key_left: KeyCode::KeyA,
             key_right: KeyCode::KeyD,
+            button_rotate: MouseButton::Middle,
             speed: 1.0,
             target: Vec3::ZERO,
             zoom: 0.0,
             height_min: 0.1,
             height_max: 5.0,
-            angle: 30.0f32.to_radians(),
+            angle: 25.0f32.to_radians(),
             enabled: true,
         }
     }
@@ -122,11 +127,8 @@ impl RtsCamera {
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraEye;
 
-fn zoom(
-    mut rts_camera: Query<(&Transform, &mut RtsCamera)>,
-    mut mouse_wheel: EventReader<MouseWheel>,
-) {
-    for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
+fn zoom(mut rts_camera: Query<(&mut RtsCamera)>, mut mouse_wheel: EventReader<MouseWheel>) {
+    for (mut rts_cam) in rts_camera.iter_mut() {
         let zoom_amount = mouse_wheel
             .read()
             .map(|event| match event.unit {
@@ -135,30 +137,25 @@ fn zoom(
             })
             .fold(0.0, |acc, val| acc + val);
         let new_zoom = (rts_cam.zoom + zoom_amount * 0.5).clamp(0.0, 1.0);
-        let zoom_delta = new_zoom - rts_cam.zoom;
         rts_cam.zoom = new_zoom;
-
-        let height_delta = (rts_cam.height_max - rts_cam.height_min).abs() * zoom_delta;
-        let new_target =
-            rts_cam.target + rts_cam_tfm.forward() * (height_delta * rts_cam.angle.tan());
-        rts_cam.target = new_target;
     }
 }
 
-fn set_look_direction(
-    rts_camera: Query<(&RtsCamera, &Children)>,
+fn update_eye_transform(
+    rts_camera: Query<(&RtsCamera, &Children), Without<RtsCameraEye>>,
     mut rts_cam_eye: Query<&mut Transform, With<RtsCameraEye>>,
 ) {
     for (rts_cam, children) in rts_camera.iter() {
         for child in children {
             if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
                 eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
+                eye_tfm.translation.z = rts_cam.dist_to_target_lateral();
             }
         }
     }
 }
 
-fn lateral_movement(
+fn move_laterally(
     mut rts_camera: Query<(&Transform, &mut RtsCamera)>,
     button_input: Res<ButtonInput<KeyCode>>,
     mut gizmos: Gizmos,
@@ -198,18 +195,32 @@ fn follow_ground(
     mut raycast: Raycast,
 ) {
     for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
-        let dist_to_target_lateral = rts_cam.dist_to_target_lateral();
-
         // todo: add more rays to smooth transition between sudden ground height changes???
         // Ray starting directly above where the camera is looking, pointing straight down
-        let ray1 = Ray3d::new(
-            rts_cam_tfm.translation + rts_cam_tfm.forward() * dist_to_target_lateral,
-            Vec3::from(rts_cam_tfm.down()),
-        );
+        let ray1 = Ray3d::new(rts_cam_tfm.translation, Vec3::from(rts_cam_tfm.down()));
         let hits1 = raycast.debug_cast_ray(ray1, &RaycastSettings::default(), &mut gizmos);
         let hit1 = hits1.first().map(|(_, hit)| hit);
         if let Some(hit1) = hit1 {
             rts_cam.target.y = hit1.position().y + rts_cam.height();
+        }
+    }
+}
+
+fn rotate(
+    mut rts_camera: Query<(&mut Transform, &RtsCamera)>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    mut mouse_motion: EventReader<MouseMotion>,
+    primary_window_q: Query<&Window, With<PrimaryWindow>>,
+) {
+    for (mut rts_cam_tfm, rts_cam) in rts_camera.iter_mut() {
+        if mouse_input.pressed(rts_cam.button_rotate) {
+            let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
+            if let Ok(primary_window) = primary_window_q.get_single() {
+                // Adjust based on window size, so that moving mouse entire width of window
+                // will be one half rotation (180 degrees)
+                let delta_x = mouse_delta.x / primary_window.width() * PI;
+                rts_cam_tfm.rotate_y(-delta_x);
+            }
         }
     }
 }
@@ -220,22 +231,23 @@ fn move_towards_target(mut rts_camera: Query<(&mut Transform, &RtsCamera)>) {
     }
 }
 
-fn debug(rts_camera: Query<(&Transform, &RtsCamera)>, mut gizmos: Gizmos) {
+fn debug(
+    rts_camera: Query<(&GlobalTransform, &RtsCamera), Without<RtsCameraEye>>,
+    rts_cam_eye: Query<&mut GlobalTransform, With<RtsCameraEye>>,
+    mut gizmos: Gizmos,
+) {
     for (rts_cam_tfm, _) in rts_camera.iter() {
-        gizmos.ray(
-            rts_cam_tfm.translation,
-            Vec3::from(rts_cam_tfm.back()),
-            Color::BLUE,
-        );
-        gizmos.ray(
-            rts_cam_tfm.translation,
-            Vec3::from(rts_cam_tfm.up()),
-            Color::GREEN,
-        );
-        gizmos.ray(
-            rts_cam_tfm.translation,
-            Vec3::from(rts_cam_tfm.right()),
-            Color::RED,
+        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.back(), Color::BLUE);
+        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.up(), Color::GREEN);
+        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.right(), Color::RED);
+    }
+
+    for eye_tfm in rts_cam_eye.iter() {
+        gizmos.sphere(eye_tfm.translation(), Quat::IDENTITY, 0.2, Color::PURPLE);
+        gizmos.arrow(
+            eye_tfm.translation(),
+            eye_tfm.translation() + eye_tfm.forward(),
+            Color::PINK,
         );
     }
 }
