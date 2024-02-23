@@ -18,10 +18,16 @@
 
 - [x] Smooth panning across ground and follow terrain height
 - [x] Zoom
-- [ ] Edge pan
+- [x] Edge pan
 - [x] rotate around Y (up)
 - [ ] Lock onto entity (smoothed)
-- [ ] Custom everything (controls, sensitivity, limits, up vector, etc.)
+- [x] Custom pan controls
+- [x] Custom speed
+- [x] Custom edge pan width
+- [x] Custom max/min height
+- [x] Custom smoothness
+- [x] Custom angle
+- [ ] Custom up vector
 
 ## Controls
 
