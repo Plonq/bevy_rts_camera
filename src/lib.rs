@@ -29,9 +29,9 @@ impl Plugin for RtsCameraPlugin {
             // todo: optimize
             (
                 zoom,
+                follow_ground,
                 update_eye_transform,
                 move_laterally,
-                follow_ground,
                 rotate,
                 debug,
                 move_towards_target,
@@ -127,8 +127,8 @@ impl RtsCamera {
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraEye;
 
-fn zoom(mut rts_camera: Query<(&mut RtsCamera)>, mut mouse_wheel: EventReader<MouseWheel>) {
-    for (mut rts_cam) in rts_camera.iter_mut() {
+fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<MouseWheel>) {
+    for mut rts_cam in rts_camera.iter_mut() {
         let zoom_amount = mouse_wheel
             .read()
             .map(|event| match event.unit {
@@ -149,7 +149,10 @@ fn update_eye_transform(
         for child in children {
             if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
                 eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
-                eye_tfm.translation.z = rts_cam.dist_to_target_lateral();
+                eye_tfm.translation.z = eye_tfm
+                    .translation
+                    .z
+                    .lerp(rts_cam.dist_to_target_lateral(), 0.2);
             }
         }
     }
