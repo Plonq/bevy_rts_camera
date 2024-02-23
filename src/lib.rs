@@ -26,7 +26,6 @@ impl Plugin for RtsCameraPlugin {
             Update,
             // todo: optimize
             (
-                update_transform,
                 zoom,
                 set_look_direction,
                 lateral_movement,
@@ -89,10 +88,6 @@ pub struct RtsCamera {
     pub height_max: f32,
     pub angle: f32,
     pub enabled: bool,
-
-    // Data
-    pub initialized: bool,
-    pub transform: Transform,
 }
 
 impl Default for RtsCamera {
@@ -110,8 +105,6 @@ impl Default for RtsCamera {
             height_max: 5.0,
             angle: 30.0f32.to_radians(),
             enabled: true,
-            initialized: false,
-            transform: Transform::IDENTITY,
         }
     }
 }
@@ -126,21 +119,14 @@ impl RtsCamera {
     }
 }
 
-fn update_transform(mut rts_camera: Query<(&Transform, &mut RtsCamera)>) {
+#[derive(Component, Copy, Clone, Debug, PartialEq)]
+pub struct RtsCameraEye;
+
+fn zoom(
+    mut rts_camera: Query<(&Transform, &mut RtsCamera)>,
+    mut mouse_wheel: EventReader<MouseWheel>,
+) {
     for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
-        if !rts_cam.initialized {
-            rts_cam.target = rts_cam_tfm.translation;
-            rts_cam.initialized = true;
-        }
-
-        let flat_fwd = Vec3::new(rts_cam_tfm.forward().x, 0.0, rts_cam_tfm.forward().z);
-        let new_transform = rts_cam_tfm.looking_to(flat_fwd, Vec3::Y);
-        rts_cam.transform = new_transform;
-    }
-}
-
-fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<MouseWheel>) {
-    for mut rts_cam in rts_camera.iter_mut() {
         let zoom_amount = mouse_wheel
             .read()
             .map(|event| match event.unit {
@@ -154,16 +140,21 @@ fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<Mous
 
         let height_delta = (rts_cam.height_max - rts_cam.height_min).abs() * zoom_delta;
         let new_target =
-            rts_cam.target + rts_cam.transform.forward() * (height_delta * rts_cam.angle.tan());
+            rts_cam.target + rts_cam_tfm.forward() * (height_delta * rts_cam.angle.tan());
         rts_cam.target = new_target;
     }
 }
 
-fn set_look_direction(mut rts_camera: Query<(&mut Transform, &RtsCamera)>) {
-    for (mut rts_cam_tfm, rts_cam) in rts_camera.iter_mut() {
-        let mut new_tfm = rts_cam.transform;
-        new_tfm.rotate_x(rts_cam.angle - 90f32.to_radians());
-        rts_cam_tfm.rotation = new_tfm.rotation;
+fn set_look_direction(
+    rts_camera: Query<(&RtsCamera, &Children)>,
+    mut rts_cam_eye: Query<&mut Transform, With<RtsCameraEye>>,
+) {
+    for (rts_cam, children) in rts_camera.iter() {
+        for child in children {
+            if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
+                eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
+            }
+        }
     }
 }
 
@@ -176,23 +167,23 @@ fn lateral_movement(
     for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
         gizmos.ray(
             rts_cam_tfm.translation,
-            Vec3::from(rts_cam.transform.forward()),
+            Vec3::from(rts_cam_tfm.forward()),
             Color::AQUAMARINE,
         );
 
         let mut delta = Vec3::ZERO;
 
         if button_input.pressed(rts_cam.key_up) {
-            delta += rts_cam.transform.forward() * rts_cam.speed;
+            delta += rts_cam_tfm.forward() * rts_cam.speed;
         }
         if button_input.pressed(rts_cam.key_down) {
-            delta += rts_cam.transform.back() * rts_cam.speed;
+            delta += rts_cam_tfm.back() * rts_cam.speed;
         }
         if button_input.pressed(rts_cam.key_left) {
-            delta += rts_cam.transform.left() * rts_cam.speed;
+            delta += rts_cam_tfm.left() * rts_cam.speed;
         }
         if button_input.pressed(rts_cam.key_right) {
-            delta += rts_cam.transform.right() * rts_cam.speed;
+            delta += rts_cam_tfm.right() * rts_cam.speed;
         }
 
         let new_target =
@@ -201,15 +192,19 @@ fn lateral_movement(
     }
 }
 
-fn follow_ground(mut rts_camera: Query<&mut RtsCamera>, mut gizmos: Gizmos, mut raycast: Raycast) {
-    for mut rts_cam in rts_camera.iter_mut() {
+fn follow_ground(
+    mut rts_camera: Query<(&Transform, &mut RtsCamera)>,
+    mut gizmos: Gizmos,
+    mut raycast: Raycast,
+) {
+    for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
         let dist_to_target_lateral = rts_cam.dist_to_target_lateral();
 
         // todo: add more rays to smooth transition between sudden ground height changes???
         // Ray starting directly above where the camera is looking, pointing straight down
         let ray1 = Ray3d::new(
-            rts_cam.transform.translation + rts_cam.transform.forward() * dist_to_target_lateral,
-            Vec3::from(rts_cam.transform.down()),
+            rts_cam_tfm.translation + rts_cam_tfm.forward() * dist_to_target_lateral,
+            Vec3::from(rts_cam_tfm.down()),
         );
         let hits1 = raycast.debug_cast_ray(ray1, &RaycastSettings::default(), &mut gizmos);
         let hit1 = hits1.first().map(|(_, hit)| hit);

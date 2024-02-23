@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_rts_camera::{RtsCamera, RtsCameraPlugin};
+use bevy_rts_camera::{RtsCamera, RtsCameraEye, RtsCameraPlugin};
 
 fn main() {
     App::new()
@@ -55,27 +55,18 @@ fn setup(
         ..default()
     });
     // Camera
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 5.0, 1.5))
-                .looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        },
-        RtsCamera::default(),
-    ));
-    // commands
-    //     .spawn((
-    //         // Camera3dBundle {
-    //         //     transform: Transform::from_translation(Vec3::new(0.0, 2.5, 1.5))
-    //         //         .looking_at(Vec3::ZERO, Vec3::Y),
-    //         //     ..default()
-    //         // },
-    //         RtsCamera::default(),
-    //         TransformBundle::default(),
-    //     ))
-    //     .with_children(|parent| {
-    //         parent.spawn(Camera3dBundle::default());
-    //     });
+    commands
+        .spawn((
+            TransformBundle {
+                local: Transform::from_translation(Vec3::new(0.0, 2.5, 1.5)),
+                ..default()
+            },
+            RtsCamera::default(),
+        ))
+        .with_children(|parent| {
+            parent.spawn((Camera3dBundle::default(), RtsCameraEye));
+        });
+    // Debug Camera
     commands.spawn((
         Camera3dBundle {
             transform: Transform::from_translation(Vec3::new(8.0, 1.0, 14.0))
@@ -86,19 +77,24 @@ fn setup(
             },
             ..default()
         },
-        PanOrbitCamera::default(),
+        PanOrbitCamera {
+            enabled: false,
+            zoom_sensitivity: 0.0,
+            ..default()
+        },
     ));
 }
 
 fn swap_cameras(
-    mut orbit_cam: Query<&mut Camera, With<PanOrbitCamera>>,
-    mut rts_cam: Query<&mut Camera, (With<RtsCamera>, Without<PanOrbitCamera>)>,
+    mut orbit_cam: Query<(&mut Camera, &mut PanOrbitCamera)>,
+    mut rts_cam: Query<&mut Camera, (With<RtsCameraEye>, Without<PanOrbitCamera>)>,
     button_input: Res<ButtonInput<KeyCode>>,
 ) {
     if button_input.just_pressed(KeyCode::Space) {
-        let mut orbit_cam = orbit_cam.get_single_mut().unwrap();
+        let (mut orbit_camera, mut orbit_cam) = orbit_cam.get_single_mut().unwrap();
         let mut rts_cam = rts_cam.get_single_mut().unwrap();
-        orbit_cam.is_active = !orbit_cam.is_active;
+        orbit_camera.is_active = !orbit_camera.is_active;
+        orbit_cam.enabled = orbit_camera.is_active;
         rts_cam.is_active = !rts_cam.is_active;
     }
 }
