@@ -16,10 +16,10 @@
 
 [//]: # (TODO)
 
-- [ ] Smooth panning across ground and follow terrain height (how???)
-- [ ] Zoom
+- [x] Smooth panning across ground and follow terrain height
+- [x] Zoom
 - [ ] Edge pan
-- [ ] rotate around Y (up)
+- [x] rotate around Y (up)
 - [ ] Lock onto entity (smoothed)
 - [ ] Custom everything (controls, sensitivity, limits, up vector, etc.)
 
