@@ -79,19 +79,23 @@ pub struct RtsCameraSystemSet;
 /// ```
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCamera {
-    // Config
+    // Controls
     pub key_up: KeyCode,
     pub key_down: KeyCode,
     pub key_left: KeyCode,
     pub key_right: KeyCode,
     pub button_rotate: MouseButton,
+    // Config
+    pub edge_pan_width: f32,
     pub speed: f32,
-    pub target: Vec3,
-    pub zoom: f32,
     pub height_min: f32,
     pub height_max: f32,
     pub angle: f32,
     pub smoothness: f32,
+    // Auto-updated
+    pub zoom: f32,
+    pub target: Vec3,
+    // Misc
     pub enabled: bool,
 }
 
@@ -104,6 +108,7 @@ impl Default for RtsCamera {
             key_left: KeyCode::KeyA,
             key_right: KeyCode::KeyD,
             button_rotate: MouseButton::Middle,
+            edge_pan_width: 0.1,
             speed: 1.0,
             target: Vec3::ZERO,
             zoom: 0.0,
@@ -163,18 +168,13 @@ fn update_eye_transform(
 fn move_laterally(
     mut rts_camera: Query<(&Transform, &mut RtsCamera)>,
     button_input: Res<ButtonInput<KeyCode>>,
-    mut gizmos: Gizmos,
+    primary_window_q: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
 ) {
     for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
-        gizmos.ray(
-            rts_cam_tfm.translation,
-            Vec3::from(rts_cam_tfm.forward()),
-            Color::AQUAMARINE,
-        );
-
         let mut delta = Vec3::ZERO;
 
+        // Keyboard pan
         if button_input.pressed(rts_cam.key_up) {
             delta += rts_cam_tfm.forward() * rts_cam.speed;
         }
@@ -186,6 +186,31 @@ fn move_laterally(
         }
         if button_input.pressed(rts_cam.key_right) {
             delta += rts_cam_tfm.right() * rts_cam.speed;
+        }
+
+        // Edge pan
+        if let Ok(primary_window) = primary_window_q.get_single() {
+            if let Some(cursor_position) = primary_window.cursor_position() {
+                let win_w = primary_window.width();
+                let win_h = primary_window.height();
+                let pan_width = win_h * rts_cam.edge_pan_width;
+                // Pan left
+                if cursor_position.x < pan_width {
+                    delta.x -= rts_cam.speed;
+                }
+                // Pan right
+                if cursor_position.x > win_w - pan_width {
+                    delta.x += rts_cam.speed;
+                }
+                // Pan up
+                if cursor_position.y < pan_width {
+                    delta.z -= rts_cam.speed;
+                }
+                // Pan down
+                if cursor_position.y > win_h - pan_width {
+                    delta.z += rts_cam.speed;
+                }
+            }
         }
 
         let new_target =
@@ -244,6 +269,11 @@ fn debug(
     mut gizmos: Gizmos,
 ) {
     for (rts_cam_tfm, _) in rts_camera.iter() {
+        gizmos.ray(
+            rts_cam_tfm.translation(),
+            rts_cam_tfm.forward(),
+            Color::AQUAMARINE,
+        );
         gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.back(), Color::BLUE);
         gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.up(), Color::GREEN);
         gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.right(), Color::RED);
