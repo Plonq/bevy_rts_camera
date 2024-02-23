@@ -91,6 +91,7 @@ pub struct RtsCamera {
     pub height_min: f32,
     pub height_max: f32,
     pub angle: f32,
+    pub smoothness: f32,
     pub enabled: bool,
 }
 
@@ -109,6 +110,7 @@ impl Default for RtsCamera {
             height_min: 0.1,
             height_max: 5.0,
             angle: 25.0f32.to_radians(),
+            smoothness: 0.8,
             enabled: true,
         }
     }
@@ -152,7 +154,7 @@ fn update_eye_transform(
                 eye_tfm.translation.z = eye_tfm
                     .translation
                     .z
-                    .lerp(rts_cam.dist_to_target_lateral(), 0.2);
+                    .lerp(rts_cam.dist_to_target_lateral(), 1.0 - rts_cam.smoothness);
             }
         }
     }
@@ -230,7 +232,9 @@ fn rotate(
 
 fn move_towards_target(mut rts_camera: Query<(&mut Transform, &RtsCamera)>) {
     for (mut rts_cam_tfm, rts_cam) in rts_camera.iter_mut() {
-        rts_cam_tfm.translation = rts_cam_tfm.translation.lerp(rts_cam.target, 0.2);
+        rts_cam_tfm.translation = rts_cam_tfm
+            .translation
+            .lerp(rts_cam.target, 1.0 - rts_cam.smoothness);
     }
 }
 
