@@ -27,7 +27,6 @@
 - [x] Custom max/min height
 - [x] Custom smoothness
 - [x] Custom angle
-- [ ] Custom up vector
 
 ## Controls
 
