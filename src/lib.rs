@@ -249,7 +249,7 @@ fn rotate(
                 // Adjust based on window size, so that moving mouse entire width of window
                 // will be one half rotation (180 degrees)
                 let delta_x = mouse_delta.x / primary_window.width() * PI;
-                rts_cam_tfm.rotate_y(-delta_x);
+                rts_cam_tfm.rotate_local_y(-delta_x);
             }
         }
     }
