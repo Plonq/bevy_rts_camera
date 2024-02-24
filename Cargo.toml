@@ -13,7 +13,7 @@ readme = "README.md"
 
 [dependencies]
 bevy = { version = "0.13", default-features = false, features = ["bevy_render"] }
-bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast.git", branch = "bevy-0.13" }
+bevy_mod_raycast = { version = "0.17" }
 
 [dev-dependencies]
 bevy = { version = "0.13" }
