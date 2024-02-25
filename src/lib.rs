@@ -122,11 +122,15 @@ impl Default for RtsCamera {
 }
 
 impl RtsCamera {
+    /// Return the current height of the camera based on the min/max height and the zoom level
     fn height(&self) -> f32 {
         self.height_max.lerp(self.height_min, self.zoom)
     }
 
-    fn dist_to_target_lateral(&self) -> f32 {
+    /// Return the distance offset to the camera based on the angle and the current height.
+    /// I.e. this is how far the camera is from what the camera is looking at, ignoring the Y
+    /// axis.
+    fn camera_offset(&self) -> f32 {
         self.height() * self.angle.tan()
     }
 }
@@ -165,7 +169,7 @@ fn update_eye_transform(
                 eye_tfm.translation.z = eye_tfm
                     .translation
                     .z
-                    .lerp(rts_cam.dist_to_target_lateral(), 1.0 - rts_cam.smoothness);
+                    .lerp(rts_cam.camera_offset(), 1.0 - rts_cam.smoothness);
             }
         }
     }
