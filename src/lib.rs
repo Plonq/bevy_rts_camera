@@ -29,7 +29,7 @@ impl Plugin for RtsCameraPlugin {
             // todo: optimize
             (
                 zoom,
-                follow_ground,
+                follow_ground.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
                 update_eye_transform,
                 move_laterally.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
                 lock.run_if(|q: Query<&RtsCameraLock>| !q.is_empty()),
@@ -160,7 +160,10 @@ fn update_eye_transform(
         for child in children {
             if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
                 eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
-                eye_tfm.translation.z = rts_cam.dist_to_target_lateral();
+                eye_tfm.translation.z = eye_tfm
+                    .translation
+                    .z
+                    .lerp(rts_cam.dist_to_target_lateral(), 1.0 - rts_cam.smoothness);
             }
         }
     }
@@ -228,7 +231,7 @@ fn lock(
         for (mut _rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
             rts_cam.target.x = target_tfm.translation.x;
             rts_cam.target.z = target_tfm.translation.z;
-            rts_cam.target.y = rts_cam.height();
+            rts_cam.target.y = target_tfm.translation.y + rts_cam.height();
         }
     }
 }
