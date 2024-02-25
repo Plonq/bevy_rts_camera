@@ -156,10 +156,7 @@ fn update_eye_transform(
         for child in children {
             if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
                 eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
-                eye_tfm.translation.z = eye_tfm
-                    .translation
-                    .z
-                    .lerp(rts_cam.dist_to_target_lateral(), 1.0 - rts_cam.smoothness);
+                eye_tfm.translation.z = rts_cam.dist_to_target_lateral();
             }
         }
     }
