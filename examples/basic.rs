@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_rts_camera::{
-    RtsCamera, RtsCameraEye, RtsCameraLock, RtsCameraPlugin, RtsCameraSystemSet,
+    RtsCamera, RtsCameraEye, RtsCameraGround, RtsCameraLock, RtsCameraPlugin, RtsCameraSystemSet,
 };
 use std::f32::consts::TAU;
 
@@ -36,37 +36,47 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Ground
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(15.0, 15.0)),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
-        ..default()
-    });
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(15.0, 15.0)),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+            ..default()
+        })
+        .insert(RtsCameraGround);
     // Some "terrain"
     let terrain_material = materials.add(Color::rgb(0.8, 0.7, 0.6));
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::new(1.0, 0.5, 1.0)),
-        material: terrain_material.clone(),
-        transform: Transform::from_xyz(0.0, 0.25, 0.0),
-        ..default()
-    });
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::new(3.0, 0.2, 1.0)),
-        material: terrain_material.clone(),
-        transform: Transform::from_xyz(3.0, 0.1, -1.0),
-        ..default()
-    });
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::new(2.0, 0.3, 3.0)),
-        material: terrain_material.clone(),
-        transform: Transform::from_xyz(-3.0, 0.15, 0.0),
-        ..default()
-    });
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Sphere::new(3.0)),
-        material: terrain_material.clone(),
-        transform: Transform::from_xyz(-5.0, 0.0, 3.0),
-        ..default()
-    });
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Cuboid::new(1.0, 0.5, 1.0)),
+            material: terrain_material.clone(),
+            transform: Transform::from_xyz(0.0, 0.25, 0.0),
+            ..default()
+        })
+        .insert(RtsCameraGround);
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Cuboid::new(3.0, 0.2, 1.0)),
+            material: terrain_material.clone(),
+            transform: Transform::from_xyz(3.0, 0.1, -1.0),
+            ..default()
+        })
+        .insert(RtsCameraGround);
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Cuboid::new(2.0, 0.3, 3.0)),
+            material: terrain_material.clone(),
+            transform: Transform::from_xyz(-3.0, 0.15, 0.0),
+            ..default()
+        })
+        .insert(RtsCameraGround);
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Sphere::new(3.0)),
+            material: terrain_material.clone(),
+            transform: Transform::from_xyz(-5.0, 0.0, 3.0),
+            ..default()
+        })
+        .insert(RtsCameraGround);
     // A moving unit
     commands
         .spawn(PbrBundle {

@@ -138,6 +138,9 @@ pub struct RtsCameraEye;
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraLock;
 
+#[derive(Component, Copy, Clone, Debug, PartialEq)]
+pub struct RtsCameraGround;
+
 fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<MouseWheel>) {
     for mut rts_cam in rts_camera.iter_mut() {
         let zoom_amount = mouse_wheel
@@ -241,6 +244,7 @@ fn lock(
 
 fn follow_ground(
     mut rts_camera: Query<(&Transform, &mut RtsCamera)>,
+    ground_q: Query<Entity, With<RtsCameraGround>>,
     mut gizmos: Gizmos,
     mut raycast: Raycast,
 ) {
@@ -248,7 +252,14 @@ fn follow_ground(
         // todo: add more rays to smooth transition between sudden ground height changes???
         // Ray starting directly above where the camera is looking, pointing straight down
         let ray1 = Ray3d::new(rts_cam_tfm.translation, Vec3::from(rts_cam_tfm.down()));
-        let hits1 = raycast.debug_cast_ray(ray1, &RaycastSettings::default(), &mut gizmos);
+        let hits1 = raycast.debug_cast_ray(
+            ray1,
+            &RaycastSettings {
+                filter: &|entity| ground_q.get(entity).is_ok(),
+                ..default()
+            },
+            &mut gizmos,
+        );
         let hit1 = hits1.first().map(|(_, hit)| hit);
         if let Some(hit1) = hit1 {
             rts_cam.target.y = hit1.position().y + rts_cam.height();
