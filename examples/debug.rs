@@ -81,9 +81,6 @@ fn setup(
             ..default()
         })
         .insert(Move);
-    // .insert(RtsCameraLock {
-    //     height_offset: -0.125,
-    // });
     // Light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
