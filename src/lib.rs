@@ -115,7 +115,7 @@ impl Default for RtsCamera {
             height_min: 0.1,
             height_max: 5.0,
             angle: 25.0f32.to_radians(),
-            smoothness: 0.8,
+            smoothness: 0.9,
             enabled: true,
         }
     }
