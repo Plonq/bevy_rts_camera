@@ -7,8 +7,6 @@ use bevy_rts_camera::{
 };
 use std::f32::consts::TAU;
 
-mod stepping;
-
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
