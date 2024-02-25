@@ -80,8 +80,10 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.25, 0.0),
             ..default()
         })
-        .insert(Move)
-        .insert(RtsCameraLock);
+        .insert(Move);
+    // .insert(RtsCameraLock {
+    //     height_offset: -0.125,
+    // });
     // Light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -146,7 +148,9 @@ fn toggle_lock(
     if key_input.just_pressed(KeyCode::KeyL) {
         if let Ok(cube) = cube_q.get_single_mut() {
             if lock_q.is_empty() {
-                commands.entity(cube).insert(RtsCameraLock);
+                commands.entity(cube).insert(RtsCameraLock {
+                    height_offset: -0.25,
+                });
             } else {
                 commands.entity(cube).remove::<RtsCameraLock>();
             }

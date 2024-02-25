@@ -134,8 +134,10 @@ impl RtsCamera {
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraEye;
 
-#[derive(Component, Copy, Clone, Debug, PartialEq)]
-pub struct RtsCameraLock;
+#[derive(Component, Default, Copy, Clone, Debug, PartialEq)]
+pub struct RtsCameraLock {
+    pub height_offset: f32,
+}
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraGround;
@@ -230,13 +232,13 @@ fn move_laterally(
 
 fn lock(
     mut rts_camera: Query<(&mut Transform, &mut RtsCamera)>,
-    target: Query<&Transform, (With<RtsCameraLock>, Without<RtsCamera>)>,
+    target: Query<(&Transform, &RtsCameraLock), Without<RtsCamera>>,
 ) {
-    for target_tfm in target.iter() {
+    for (target_tfm, lock) in target.iter() {
         for (mut _rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
             rts_cam.target.x = target_tfm.translation.x;
             rts_cam.target.z = target_tfm.translation.z;
-            rts_cam.target.y = target_tfm.translation.y + rts_cam.height();
+            rts_cam.target.y = target_tfm.translation.y + rts_cam.height() + lock.height_offset;
         }
     }
 }
