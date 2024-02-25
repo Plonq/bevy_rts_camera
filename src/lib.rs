@@ -31,7 +31,8 @@ impl Plugin for RtsCameraPlugin {
                 zoom,
                 follow_ground,
                 update_eye_transform,
-                move_laterally,
+                move_laterally.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
+                lock.run_if(|q: Query<&RtsCameraLock>| !q.is_empty()),
                 rotate,
                 debug,
                 move_towards_target,
@@ -134,6 +135,9 @@ impl RtsCamera {
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraEye;
 
+#[derive(Component, Copy, Clone, Debug, PartialEq)]
+pub struct RtsCameraLock;
+
 fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<MouseWheel>) {
     for mut rts_cam in rts_camera.iter_mut() {
         let zoom_amount = mouse_wheel
@@ -213,6 +217,19 @@ fn move_laterally(
         let new_target =
             rts_cam.target + delta.normalize_or_zero() * time.delta_seconds() * 2.0 * rts_cam.speed;
         rts_cam.target = new_target;
+    }
+}
+
+fn lock(
+    mut rts_camera: Query<(&mut Transform, &mut RtsCamera)>,
+    target: Query<&Transform, (With<RtsCameraLock>, Without<RtsCamera>)>,
+) {
+    for target_tfm in target.iter() {
+        for (mut _rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
+            rts_cam.target.x = target_tfm.translation.x;
+            rts_cam.target.z = target_tfm.translation.z;
+            rts_cam.target.y = rts_cam.height();
+        }
     }
 }
 
