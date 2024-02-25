@@ -34,7 +34,6 @@ impl Plugin for RtsCameraPlugin {
                 move_laterally.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
                 lock.run_if(|q: Query<&RtsCameraLock>| !q.is_empty()),
                 rotate,
-                debug,
                 move_towards_target,
             )
                 .chain()
@@ -291,31 +290,5 @@ fn move_towards_target(mut rts_camera: Query<(&mut Transform, &RtsCamera)>) {
         rts_cam_tfm.translation = rts_cam_tfm
             .translation
             .lerp(rts_cam.target, 1.0 - rts_cam.smoothness);
-    }
-}
-
-fn debug(
-    rts_camera: Query<(&GlobalTransform, &RtsCamera), Without<RtsCameraEye>>,
-    rts_cam_eye: Query<&mut GlobalTransform, With<RtsCameraEye>>,
-    mut gizmos: Gizmos,
-) {
-    for (rts_cam_tfm, _) in rts_camera.iter() {
-        gizmos.ray(
-            rts_cam_tfm.translation(),
-            rts_cam_tfm.forward(),
-            Color::AQUAMARINE,
-        );
-        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.back(), Color::BLUE);
-        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.up(), Color::GREEN);
-        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.right(), Color::RED);
-    }
-
-    for eye_tfm in rts_cam_eye.iter() {
-        gizmos.sphere(eye_tfm.translation(), Quat::IDENTITY, 0.2, Color::PURPLE);
-        gizmos.arrow(
-            eye_tfm.translation(),
-            eye_tfm.translation() + eye_tfm.forward(),
-            Color::PINK,
-        );
     }
 }

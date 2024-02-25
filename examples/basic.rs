@@ -14,15 +14,12 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
         .add_plugins(PanOrbitCameraPlugin)
-        // .add_plugins(
-        //     stepping::SteppingPlugin::default()
-        //         .add_schedule(Update)
-        //         .at(Val::Percent(35.0), Val::Percent(50.0)),
-        // )
         .add_systems(Startup, setup)
         .add_systems(
             Update,
-            (animate_unit, toggle_lock, swap_cameras).before(RtsCameraSystemSet),
+            (animate_unit, (toggle_lock, swap_cameras), debug)
+                .chain()
+                .before(RtsCameraSystemSet),
         )
         .run();
 }
@@ -170,5 +167,31 @@ fn swap_cameras(
         orbit_camera.is_active = !orbit_camera.is_active;
         orbit_cam.enabled = orbit_camera.is_active;
         rts_cam.is_active = !rts_cam.is_active;
+    }
+}
+
+fn debug(
+    rts_camera: Query<(&GlobalTransform, &RtsCamera), Without<RtsCameraEye>>,
+    rts_cam_eye: Query<&mut GlobalTransform, With<RtsCameraEye>>,
+    mut gizmos: Gizmos,
+) {
+    for (rts_cam_tfm, _) in rts_camera.iter() {
+        gizmos.ray(
+            rts_cam_tfm.translation(),
+            rts_cam_tfm.forward(),
+            Color::AQUAMARINE,
+        );
+        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.back(), Color::BLUE);
+        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.up(), Color::GREEN);
+        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.right(), Color::RED);
+    }
+
+    for eye_tfm in rts_cam_eye.iter() {
+        gizmos.sphere(eye_tfm.translation(), Quat::IDENTITY, 0.2, Color::PURPLE);
+        gizmos.arrow(
+            eye_tfm.translation(),
+            eye_tfm.translation() + eye_tfm.forward(),
+            Color::PINK,
+        );
     }
 }
