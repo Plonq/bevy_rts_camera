@@ -11,6 +11,7 @@
 ## Summary
 
 [//]: # (TODO)
+Bevy RTS Camera provides RTS-style camera controls for Bevy Engine, to get your game up and running quickly.
 
 ## Features:
 
@@ -20,7 +21,7 @@
 - [x] Zoom
 - [x] Edge pan
 - [x] rotate around Y (up)
-- [ ] Lock onto entity (smoothed)
+- [x] Lock onto entity (smoothed)
 - [x] Custom pan controls
 - [x] Custom speed
 - [x] Custom edge pan width
