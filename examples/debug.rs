@@ -145,9 +145,7 @@ fn toggle_lock(
     if key_input.just_pressed(KeyCode::KeyL) {
         if let Ok(cube) = cube_q.get_single_mut() {
             if lock_q.is_empty() {
-                commands.entity(cube).insert(RtsCameraLock {
-                    height_offset: -0.25,
-                });
+                commands.entity(cube).insert(RtsCameraLock);
             } else {
                 commands.entity(cube).remove::<RtsCameraLock>();
             }

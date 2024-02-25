@@ -29,7 +29,7 @@ impl Plugin for RtsCameraPlugin {
             // todo: optimize
             (
                 zoom,
-                follow_ground.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
+                follow_ground,
                 update_eye_transform,
                 move_laterally.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
                 lock.run_if(|q: Query<&RtsCameraLock>| !q.is_empty()),
@@ -135,9 +135,7 @@ impl RtsCamera {
 pub struct RtsCameraEye;
 
 #[derive(Component, Default, Copy, Clone, Debug, PartialEq)]
-pub struct RtsCameraLock {
-    pub height_offset: f32,
-}
+pub struct RtsCameraLock;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraGround;
@@ -234,11 +232,10 @@ fn lock(
     mut rts_camera: Query<(&mut Transform, &mut RtsCamera)>,
     target: Query<(&Transform, &RtsCameraLock), Without<RtsCamera>>,
 ) {
-    for (target_tfm, lock) in target.iter() {
+    for (target_tfm, _lock) in target.iter() {
         for (mut _rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
             rts_cam.target.x = target_tfm.translation.x;
             rts_cam.target.z = target_tfm.translation.z;
-            rts_cam.target.y = target_tfm.translation.y + rts_cam.height() + lock.height_offset;
         }
     }
 }
