@@ -172,6 +172,7 @@ fn update_eye_transform(
 fn move_laterally(
     mut rts_camera: Query<(&Transform, &mut RtsCamera)>,
     button_input: Res<ButtonInput<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
 ) {
@@ -193,26 +194,28 @@ fn move_laterally(
         }
 
         // Edge pan
-        if let Ok(primary_window) = primary_window_q.get_single() {
-            if let Some(cursor_position) = primary_window.cursor_position() {
-                let win_w = primary_window.width();
-                let win_h = primary_window.height();
-                let pan_width = win_h * rts_cam.edge_pan_width;
-                // Pan left
-                if cursor_position.x < pan_width {
-                    delta.x -= rts_cam.speed;
-                }
-                // Pan right
-                if cursor_position.x > win_w - pan_width {
-                    delta.x += rts_cam.speed;
-                }
-                // Pan up
-                if cursor_position.y < pan_width {
-                    delta.z -= rts_cam.speed;
-                }
-                // Pan down
-                if cursor_position.y > win_h - pan_width {
-                    delta.z += rts_cam.speed;
+        if delta.length_squared() == 0.0 && !mouse_input.pressed(rts_cam.button_rotate) {
+            if let Ok(primary_window) = primary_window_q.get_single() {
+                if let Some(cursor_position) = primary_window.cursor_position() {
+                    let win_w = primary_window.width();
+                    let win_h = primary_window.height();
+                    let pan_width = win_h * rts_cam.edge_pan_width;
+                    // Pan left
+                    if cursor_position.x < pan_width {
+                        delta.x -= rts_cam.speed;
+                    }
+                    // Pan right
+                    if cursor_position.x > win_w - pan_width {
+                        delta.x += rts_cam.speed;
+                    }
+                    // Pan up
+                    if cursor_position.y < pan_width {
+                        delta.z -= rts_cam.speed;
+                    }
+                    // Pan down
+                    if cursor_position.y > win_h - pan_width {
+                        delta.z += rts_cam.speed;
+                    }
                 }
             }
         }
