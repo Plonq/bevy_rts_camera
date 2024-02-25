@@ -206,19 +206,19 @@ fn move_laterally(
                     let pan_width = win_h * rts_cam.edge_pan_width;
                     // Pan left
                     if cursor_position.x < pan_width {
-                        delta.x -= rts_cam.speed;
+                        delta += rts_cam_tfm.left() * rts_cam.speed;
                     }
                     // Pan right
                     if cursor_position.x > win_w - pan_width {
-                        delta.x += rts_cam.speed;
+                        delta += rts_cam_tfm.right() * rts_cam.speed;
                     }
                     // Pan up
                     if cursor_position.y < pan_width {
-                        delta.z -= rts_cam.speed;
+                        delta += rts_cam_tfm.forward() * rts_cam.speed;
                     }
                     // Pan down
                     if cursor_position.y > win_h - pan_width {
-                        delta.z += rts_cam.speed;
+                        delta += rts_cam_tfm.back() * rts_cam.speed;
                     }
                 }
             }
