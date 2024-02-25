@@ -26,14 +26,15 @@ impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            // todo: optimize
             (
-                zoom,
-                follow_ground,
-                update_eye_transform,
-                move_laterally.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
-                lock.run_if(|q: Query<&RtsCameraLock>| !q.is_empty()),
-                rotate,
+                (
+                    zoom,
+                    follow_ground,
+                    update_eye_transform,
+                    move_laterally.run_if(|q: Query<&RtsCameraLock>| q.is_empty()),
+                    lock.run_if(|q: Query<&RtsCameraLock>| !q.is_empty()),
+                    rotate,
+                ),
                 move_towards_target,
             )
                 .chain()
