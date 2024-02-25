@@ -109,7 +109,7 @@ impl Default for RtsCamera {
             key_left: KeyCode::KeyA,
             key_right: KeyCode::KeyD,
             button_rotate: MouseButton::Middle,
-            edge_pan_width: 0.1,
+            edge_pan_width: 0.05,
             speed: 1.0,
             target: Vec3::ZERO,
             zoom: 0.0,
