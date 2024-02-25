@@ -2,17 +2,33 @@
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_rts_camera::{RtsCamera, RtsCameraEye, RtsCameraPlugin};
+use bevy_rts_camera::{
+    RtsCamera, RtsCameraEye, RtsCameraLock, RtsCameraPlugin, RtsCameraSystemSet,
+};
+use std::f32::consts::TAU;
+
+mod stepping;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
         .add_plugins(PanOrbitCameraPlugin)
+        // .add_plugins(
+        //     stepping::SteppingPlugin::default()
+        //         .add_schedule(Update)
+        //         .at(Val::Percent(35.0), Val::Percent(50.0)),
+        // )
         .add_systems(Startup, setup)
-        .add_systems(Update, swap_cameras)
+        .add_systems(
+            Update,
+            (animate_unit, toggle_lock, swap_cameras).before(RtsCameraSystemSet),
+        )
         .run();
 }
+
+#[derive(Component)]
+struct Move;
 
 fn setup(
     mut commands: Commands,
@@ -45,6 +61,22 @@ fn setup(
         transform: Transform::from_xyz(-3.0, 0.15, 0.0),
         ..default()
     });
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Sphere::new(3.0)),
+        material: terrain_material.clone(),
+        transform: Transform::from_xyz(-5.0, 0.0, 3.0),
+        ..default()
+    });
+    // A moving unit
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Capsule3d::new(0.1, 0.3)),
+            material: terrain_material.clone(),
+            transform: Transform::from_xyz(0.0, 0.25, 0.0),
+            ..default()
+        })
+        .insert(Move)
+        .insert(RtsCameraLock);
     // Light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -83,6 +115,38 @@ fn setup(
             ..default()
         },
     ));
+}
+
+/// Move the cube in a circle around the Y axis
+fn animate_unit(
+    time: Res<Time>,
+    mut cube_q: Query<&mut Transform, With<Move>>,
+    mut angle: Local<f32>,
+) {
+    if let Ok(mut cube_tfm) = cube_q.get_single_mut() {
+        // Rotate 20 degrees a second, wrapping around to 0 after a full rotation
+        *angle += 20f32.to_radians() * time.delta_seconds() % TAU;
+        // Convert angle to position
+        let pos = Vec3::new(angle.sin() * 1.5, 0.25, angle.cos() * 1.5);
+        cube_tfm.translation = pos;
+    }
+}
+
+fn toggle_lock(
+    mut commands: Commands,
+    mut cube_q: Query<Entity, With<Move>>,
+    lock_q: Query<&RtsCameraLock, With<Move>>,
+    key_input: Res<ButtonInput<KeyCode>>,
+) {
+    if key_input.just_pressed(KeyCode::KeyL) {
+        if let Ok(cube) = cube_q.get_single_mut() {
+            if lock_q.is_empty() {
+                commands.entity(cube).insert(RtsCameraLock);
+            } else {
+                commands.entity(cube).remove::<RtsCameraLock>();
+            }
+        }
+    }
 }
 
 fn swap_cameras(
