@@ -70,33 +70,63 @@ pub struct RtsCameraSystemSet;
 /// fn setup(mut commands: Commands) {
 ///     commands
 ///         .spawn((
-///             Camera3dBundle {
-///                 transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
-///                 ..default()
-///             },
+///             Camera3dBundle::default(),
 ///             RtsCamera::default(),
 ///         ));
 ///  }
 /// ```
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCamera {
-    // Controls
+    // todo: figure out good defaults
+    /// The key that will pan the camera up (or forward)
     pub key_up: KeyCode,
+    /// The key that will pan the camera down (or backward)
     pub key_down: KeyCode,
+    /// The key that will pan the camera left
     pub key_left: KeyCode,
+    /// The key that will pan the camera right
     pub key_right: KeyCode,
+    /// The mouse button used to rotate the camera.
+    /// Defaults to `MouseButton::Middle`.
     pub button_rotate: MouseButton,
-    // Config
+    /// How far away from the side of the screen edge pan will kick in, defined as a percentage
+    /// of the window's height. Set to `0.0` to disable edge panning.
+    /// Defaults to `0.05` (5%).
     pub edge_pan_width: f32,
+    /// Speed of camera pan (either via keyboard controls or edge panning), measured in units per
+    /// second.
+    /// Defaults to `1.0`.
     pub speed: f32,
+    /// The minimum height the camera can zoom in to. Should be set to a value that avoids clipping.
+    /// Defaults to `0.1`.
     pub height_min: f32,
+    /// The maximum height the camera can zoom out to.
+    /// Defaults to `5.0`.
     pub height_max: f32,
+    /// The angle of the camera, where a value of `0.0` is looking directly down (-Y), and a value
+    /// of `TAU / 4.0` (90 degrees) is looking directly forward. Measured in radians.
+    /// Defaults to 25 degrees.
     pub angle: f32,
+    /// The amount of smoothing applied to the camera movement. Should be a value between `0.0` and
+    /// `1.0`. Set to `0.0` to disable smoothing. `1.0` is infinite smoothing (the camera won't
+    /// move).
+    /// Defaults to `0.9`.
+    /// todo: framerate independence
     pub smoothness: f32,
-    // Auto-updated
+    /// The current zoom level of the camera, defined as a percentage of the distance between the
+    /// minimum height and maximum height. A value of `1.0` is 100% zoom (min height), and avalue of
+    /// `0.0` is 0% zoom (maximum height). Automatically updated when zooming with the scroll
+    /// wheel.
+    /// Defaults to `0.0`.
     pub zoom: f32,
+    /// The target position of the camera (the entity with `RtsCamera` specifically). The camera's
+    /// actual position will move towards this based on `smoothness` every frame.
+    /// Automatically updated based upon inputs.
+    /// Defaults to `Vec3::ZERO`.
     pub target: Vec3,
-    // Misc
+    /// Whether `RtsCamera` is enabled. When disabled, all input will be ignored, but it will still
+    /// move towards the `target`.
+    /// todo: implement
     pub enabled: bool,
 }
 
