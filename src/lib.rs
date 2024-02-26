@@ -112,11 +112,10 @@ pub struct RtsCamera {
     /// `1.0`. Set to `0.0` to disable smoothing. `1.0` is infinite smoothing (the camera won't
     /// move).
     /// Defaults to `0.9`.
-    /// todo: framerate independence
     pub smoothness: f32,
     /// The current zoom level of the camera, defined as a percentage of the distance between the
-    /// minimum height and maximum height. A value of `1.0` is 100% zoom (min height), and avalue of
-    /// `0.0` is 0% zoom (maximum height). Automatically updated when zooming with the scroll
+    /// minimum height and maximum height. A value of `1.0` is 100% zoom (min height), and a value
+    /// of `0.0` is 0% zoom (maximum height). Automatically updated when zooming with the scroll
     /// wheel.
     /// Defaults to `0.0`.
     pub zoom: f32,
@@ -127,7 +126,6 @@ pub struct RtsCamera {
     pub target: Vec3,
     /// Whether `RtsCamera` is enabled. When disabled, all input will be ignored, but it will still
     /// move towards the `target`.
-    /// todo: implement
     pub enabled: bool,
     /// Whether the camera has initialized. This is primarily used when the camera is first added
     /// to the scene, so it can snap to its starting position, ignoring any smoothing.
@@ -201,7 +199,7 @@ fn initialize(
 }
 
 fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<MouseWheel>) {
-    for mut rts_cam in rts_camera.iter_mut() {
+    for mut rts_cam in rts_camera.iter_mut().filter(|cam| cam.enabled) {
         let zoom_amount = mouse_wheel
             .read()
             .map(|event| match event.unit {
@@ -219,7 +217,7 @@ fn update_eye_transform(
     mut rts_cam_eye: Query<&mut Transform, With<RtsCameraEye>>,
     time: Res<Time>,
 ) {
-    for (rts_cam, children) in rts_camera.iter() {
+    for (rts_cam, children) in rts_camera.iter().filter(|(cam, _)| cam.enabled) {
         for child in children {
             if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
                 eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
@@ -239,7 +237,7 @@ fn move_laterally(
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
 ) {
-    for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
+    for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut().filter(|(_, cam)| cam.enabled) {
         let mut delta = Vec3::ZERO;
 
         // Keyboard pan
@@ -294,7 +292,8 @@ fn lock(
     target: Query<(&Transform, &RtsCameraLock), Without<RtsCamera>>,
 ) {
     for (target_tfm, _lock) in target.iter() {
-        for (mut _rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
+        for (mut _rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut().filter(|(_, cam)| cam.enabled)
+        {
             rts_cam.target.x = target_tfm.translation.x;
             rts_cam.target.z = target_tfm.translation.z;
         }
@@ -307,7 +306,7 @@ fn follow_ground(
     mut gizmos: Gizmos,
     mut raycast: Raycast,
 ) {
-    for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut() {
+    for (rts_cam_tfm, mut rts_cam) in rts_camera.iter_mut().filter(|(_, cam)| cam.enabled) {
         // todo: add more rays to smooth transition between sudden ground height changes???
         // Ray starting directly above where the camera is looking, pointing straight down
         let ray1 = Ray3d::new(rts_cam_tfm.translation, Vec3::from(rts_cam_tfm.down()));
@@ -332,7 +331,7 @@ fn rotate(
     mut mouse_motion: EventReader<MouseMotion>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (mut rts_cam_tfm, rts_cam) in rts_camera.iter_mut() {
+    for (mut rts_cam_tfm, rts_cam) in rts_camera.iter_mut().filter(|(_, cam)| cam.enabled) {
         if mouse_input.pressed(rts_cam.button_rotate) {
             let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
             if let Ok(primary_window) = primary_window_q.get_single() {
