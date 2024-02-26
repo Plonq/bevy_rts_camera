@@ -28,6 +28,7 @@ impl Plugin for RtsCameraPlugin {
             Update,
             (
                 (
+                    initialize,
                     zoom,
                     follow_ground,
                     update_eye_transform,
@@ -128,12 +129,17 @@ pub struct RtsCamera {
     /// move towards the `target`.
     /// todo: implement
     pub enabled: bool,
+    /// Whether the camera has initialized. This is primarily used when the camera is first added
+    /// to the scene, so it can snap to its starting position, ignoring any smoothing.
+    /// Defaults to `false`.
+    pub initialized: bool,
 }
 
 impl Default for RtsCamera {
     fn default() -> Self {
         RtsCamera {
             // todo: test compatibility with input manager
+            // todo: maybe split controller (i.e. input) into its own component???
             key_up: KeyCode::KeyW,
             key_down: KeyCode::KeyS,
             key_left: KeyCode::KeyA,
@@ -148,6 +154,7 @@ impl Default for RtsCamera {
             angle: 25.0f32.to_radians(),
             smoothness: 0.9,
             enabled: true,
+            initialized: false,
         }
     }
 }
@@ -174,6 +181,24 @@ pub struct RtsCameraLock;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCameraGround;
+
+fn initialize(
+    mut rts_camera: Query<(&mut Transform, &mut RtsCamera, &Children)>,
+    mut rts_cam_eye: Query<&mut Transform, (With<RtsCameraEye>, Without<RtsCamera>)>,
+) {
+    for (mut rts_cam_tfm, mut rts_cam, children) in
+        rts_camera.iter_mut().filter(|(_, cam, _)| !cam.initialized)
+    {
+        rts_cam.target = rts_cam_tfm.translation;
+        for child in children {
+            if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
+                eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
+                eye_tfm.translation.z = rts_cam.camera_offset();
+            }
+        }
+        rts_cam.initialized = true;
+    }
+}
 
 fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<MouseWheel>) {
     for mut rts_cam in rts_camera.iter_mut() {
