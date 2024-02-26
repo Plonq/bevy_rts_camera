@@ -94,7 +94,7 @@ fn setup(
     commands
         .spawn((
             TransformBundle {
-                local: Transform::from_translation(Vec3::new(0.0, 5.5, 10.5)),
+                local: Transform::from_translation(Vec3::new(0.0, 5.5, 5.5)),
                 ..default()
             },
             RtsCamera::default(),

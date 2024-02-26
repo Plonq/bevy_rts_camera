@@ -152,7 +152,7 @@ impl Default for RtsCamera {
             height_min: 0.1,
             height_max: 5.0,
             angle: 25.0f32.to_radians(),
-            smoothness: 0.9,
+            smoothness: 0.3,
             enabled: true,
             initialized: false,
         }
@@ -183,10 +183,10 @@ pub struct RtsCameraLock;
 pub struct RtsCameraGround;
 
 fn initialize(
-    mut rts_camera: Query<(&mut Transform, &mut RtsCamera, &Children)>,
+    mut rts_camera: Query<(&Transform, &mut RtsCamera, &Children)>,
     mut rts_cam_eye: Query<&mut Transform, (With<RtsCameraEye>, Without<RtsCamera>)>,
 ) {
-    for (mut rts_cam_tfm, mut rts_cam, children) in
+    for (rts_cam_tfm, mut rts_cam, children) in
         rts_camera.iter_mut().filter(|(_, cam, _)| !cam.initialized)
     {
         rts_cam.target = rts_cam_tfm.translation;
@@ -217,15 +217,16 @@ fn zoom(mut rts_camera: Query<&mut RtsCamera>, mut mouse_wheel: EventReader<Mous
 fn update_eye_transform(
     rts_camera: Query<(&RtsCamera, &Children), Without<RtsCameraEye>>,
     mut rts_cam_eye: Query<&mut Transform, With<RtsCameraEye>>,
+    time: Res<Time>,
 ) {
     for (rts_cam, children) in rts_camera.iter() {
         for child in children {
             if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
                 eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
-                eye_tfm.translation.z = eye_tfm
-                    .translation
-                    .z
-                    .lerp(rts_cam.camera_offset(), 1.0 - rts_cam.smoothness);
+                eye_tfm.translation.z = eye_tfm.translation.z.lerp(
+                    rts_cam.camera_offset(),
+                    1.0 - rts_cam.smoothness.powi(7).powf(time.delta_seconds()),
+                );
             }
         }
     }
@@ -344,10 +345,11 @@ fn rotate(
     }
 }
 
-fn move_towards_target(mut rts_camera: Query<(&mut Transform, &RtsCamera)>) {
+fn move_towards_target(mut rts_camera: Query<(&mut Transform, &RtsCamera)>, time: Res<Time>) {
     for (mut rts_cam_tfm, rts_cam) in rts_camera.iter_mut() {
-        rts_cam_tfm.translation = rts_cam_tfm
-            .translation
-            .lerp(rts_cam.target, 1.0 - rts_cam.smoothness);
+        rts_cam_tfm.translation = rts_cam_tfm.translation.lerp(
+            rts_cam.target,
+            1.0 - rts_cam.smoothness.powi(7).powf(time.delta_seconds()),
+        );
     }
 }
