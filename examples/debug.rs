@@ -1,9 +1,14 @@
-//! Demonstrates the simplest usage
+//! This example is set up for debugging. It draws gizmos to indicate various aspects, and you
+//! can toggle between the RTS camera view and an orbit camera in order to see a different
+//! perspective and how the camera behaves in different circumstances.
+//!
+//!    Space: toggle camera
+//!    L: toggle lock onto target
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_rts_camera::{
-    RtsCamera, RtsCameraEye, RtsCameraGround, RtsCameraLock, RtsCameraPlugin, RtsCameraSystemSet,
+    CameraEye, CameraLock, CameraPivot, Ground, RtsCameraPlugin, RtsCameraSystemSet,
 };
 use std::f32::consts::TAU;
 
@@ -37,7 +42,7 @@ fn setup(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
             ..default()
         })
-        .insert(RtsCameraGround);
+        .insert(Ground);
     // Some "terrain"
     let terrain_material = materials.add(Color::rgb(0.8, 0.7, 0.6));
     commands
@@ -47,7 +52,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.25, 0.0),
             ..default()
         })
-        .insert(RtsCameraGround);
+        .insert(Ground);
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Cuboid::new(3.0, 0.2, 1.0)),
@@ -55,7 +60,7 @@ fn setup(
             transform: Transform::from_xyz(3.0, 0.1, -1.0),
             ..default()
         })
-        .insert(RtsCameraGround);
+        .insert(Ground);
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Cuboid::new(2.0, 0.3, 3.0)),
@@ -63,7 +68,7 @@ fn setup(
             transform: Transform::from_xyz(-3.0, 0.15, 0.0),
             ..default()
         })
-        .insert(RtsCameraGround);
+        .insert(Ground);
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Sphere::new(3.0)),
@@ -71,7 +76,7 @@ fn setup(
             transform: Transform::from_xyz(-5.0, 0.0, 3.0),
             ..default()
         })
-        .insert(RtsCameraGround);
+        .insert(Ground);
     // A moving unit
     commands
         .spawn(PbrBundle {
@@ -97,10 +102,10 @@ fn setup(
                 local: Transform::from_translation(Vec3::new(0.0, 5.5, 5.5)),
                 ..default()
             },
-            RtsCamera::default(),
+            CameraPivot,
         ))
         .with_children(|parent| {
-            parent.spawn((Camera3dBundle::default(), RtsCameraEye));
+            parent.spawn((Camera3dBundle::default(), CameraEye));
         });
     // Debug Camera
     commands.spawn((
@@ -139,15 +144,15 @@ fn animate_unit(
 fn toggle_lock(
     mut commands: Commands,
     mut cube_q: Query<Entity, With<Move>>,
-    lock_q: Query<&RtsCameraLock, With<Move>>,
+    lock_q: Query<&CameraLock, With<Move>>,
     key_input: Res<ButtonInput<KeyCode>>,
 ) {
     if key_input.just_pressed(KeyCode::KeyL) {
         if let Ok(cube) = cube_q.get_single_mut() {
             if lock_q.is_empty() {
-                commands.entity(cube).insert(RtsCameraLock);
+                commands.entity(cube).insert(CameraLock);
             } else {
-                commands.entity(cube).remove::<RtsCameraLock>();
+                commands.entity(cube).remove::<CameraLock>();
             }
         }
     }
@@ -155,7 +160,7 @@ fn toggle_lock(
 
 fn swap_cameras(
     mut orbit_cam: Query<(&mut Camera, &mut PanOrbitCamera)>,
-    mut rts_cam: Query<&mut Camera, (With<RtsCameraEye>, Without<PanOrbitCamera>)>,
+    mut rts_cam: Query<&mut Camera, (With<CameraEye>, Without<PanOrbitCamera>)>,
     button_input: Res<ButtonInput<KeyCode>>,
 ) {
     if button_input.just_pressed(KeyCode::Space) {
@@ -168,8 +173,8 @@ fn swap_cameras(
 }
 
 fn debug(
-    rts_camera: Query<(&GlobalTransform, &RtsCamera), Without<RtsCameraEye>>,
-    rts_cam_eye: Query<&mut GlobalTransform, With<RtsCameraEye>>,
+    rts_camera: Query<(&GlobalTransform, &CameraPivot), Without<CameraEye>>,
+    rts_cam_eye: Query<&mut GlobalTransform, With<CameraEye>>,
     mut gizmos: Gizmos,
 ) {
     for (rts_cam_tfm, _) in rts_camera.iter() {
