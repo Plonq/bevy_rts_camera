@@ -82,7 +82,7 @@ pub struct CameraConfig {
     /// Speed of camera pan (either via keyboard controls or edge panning), measured in units per
     /// second.
     /// Defaults to `1.0`.
-    pub speed: f32,
+    pub pan_speed: f32,
     /// The minimum height the camera can zoom in to. Should be set to a value that avoids clipping.
     /// Defaults to `0.1`.
     pub height_min: f32,
@@ -107,7 +107,7 @@ impl Default for CameraConfig {
     fn default() -> Self {
         CameraConfig {
             edge_pan_width: 0.05,
-            speed: 1.0,
+            pan_speed: 1.0,
             height_min: 0.1,
             height_max: 5.0,
             angle: 25.0f32.to_radians(),
@@ -307,8 +307,8 @@ fn pan(
             }
         }
 
-        let new_target =
-            state.target + delta.normalize_or_zero() * time.delta_seconds() * 2.0 * config.speed;
+        let new_target = state.target
+            + delta.normalize_or_zero() * time.delta_seconds() * 2.0 * config.pan_speed;
         state.target = new_target;
     }
 }
