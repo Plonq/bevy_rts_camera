@@ -28,6 +28,7 @@ Bevy RTS Camera provides RTS-style camera controls for Bevy Engine, to get your 
 - [x] Custom max/min height
 - [x] Custom smoothness
 - [x] Custom angle
+- [x] Snap to location
 
 ## Controls
 

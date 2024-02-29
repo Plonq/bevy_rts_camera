@@ -8,7 +8,7 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_rts_camera::{
-    CameraEye, CameraLock, CameraPivot, Ground, RtsCameraPlugin, RtsCameraSystemSet,
+    CameraEye, CameraLock, CameraPivot, CameraState, Ground, RtsCameraPlugin, RtsCameraSystemSet,
 };
 use std::f32::consts::TAU;
 
@@ -20,7 +20,11 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(
             Update,
-            (animate_unit, (toggle_lock, swap_cameras), debug)
+            (
+                animate_unit,
+                (toggle_lock, swap_cameras, snap_to_location),
+                debug,
+            )
                 .chain()
                 .before(RtsCameraSystemSet),
         )
@@ -155,6 +159,15 @@ fn toggle_lock(
                 commands.entity(cube).remove::<CameraLock>();
             }
         }
+    }
+}
+
+fn snap_to_location(
+    mut camera_state: ResMut<CameraState>,
+    button_input: Res<ButtonInput<KeyCode>>,
+) {
+    if button_input.just_pressed(KeyCode::KeyT) {
+        camera_state.snap_to(Vec3::new(3.0, 13.0, 3.0));
     }
 }
 

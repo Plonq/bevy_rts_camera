@@ -38,6 +38,7 @@ impl Plugin for RtsCameraPlugin {
                         lock.run_if(|q: Query<&CameraLock>| !q.is_empty()),
                         rotate,
                     ),
+                    snap_to_target.run_if(|state: Res<CameraState>| state.snap_to_target),
                     move_towards_target,
                 )
                     .chain()
@@ -122,7 +123,7 @@ impl Default for CameraConfig {
 }
 
 #[derive(Resource, Debug, PartialEq, Clone)]
-struct CameraState {
+pub struct CameraState {
     /// The current zoom level of the camera, defined as a percentage of the distance between the
     /// minimum height and maximum height. A value of `1.0` is 100% zoom (min height), and a value
     /// of `0.0` is 0% zoom (maximum height). Automatically updated when zooming with the scroll
@@ -138,6 +139,7 @@ struct CameraState {
     /// to the scene, so it can snap to its starting position, ignoring any smoothing.
     /// Defaults to `false`.
     initialized: bool,
+    snap_to_target: bool,
 }
 
 impl Default for CameraState {
@@ -146,7 +148,15 @@ impl Default for CameraState {
             target: Vec3::ZERO,
             zoom: 0.0,
             initialized: false,
+            snap_to_target: false,
         }
+    }
+}
+
+impl CameraState {
+    pub fn snap_to(&mut self, target: Vec3) {
+        self.target = target;
+        self.snap_to_target = true;
     }
 }
 
@@ -381,3 +391,58 @@ fn move_towards_target(
         );
     }
 }
+
+fn snap_to_target(
+    mut state: ResMut<CameraState>,
+    config: Res<CameraConfig>,
+    mut pivot_q: Query<&mut Transform, With<CameraPivot>>,
+    ground_q: Query<Entity, With<Ground>>,
+    mut raycast: Raycast,
+) {
+    let Ok(mut pivot) = pivot_q.get_single_mut() else {
+        return;
+    };
+
+    // todo: extract to one-shot system?
+    let ray1 = Ray3d::new(state.target, Vec3::from(pivot.down()));
+    let hits1 = raycast.cast_ray(
+        ray1,
+        &RaycastSettings {
+            filter: &|entity| ground_q.get(entity).is_ok(),
+            ..default()
+        },
+    );
+    let hit1 = hits1.first().map(|(_, hit)| hit);
+    if let Some(hit1) = hit1 {
+        state.target.y = hit1.position().y + config.height_max.lerp(config.height_min, state.zoom);
+    }
+
+    pivot.translation = state.target;
+
+    state.snap_to_target = false;
+}
+
+// fn detect_height(
+//     config: Res<CameraConfig>,
+//     mut state: ResMut<CameraState>,
+//     pivot_q: Query<&Transform, With<CameraPivot>>,
+//     ground_q: Query<Entity, With<Ground>>,
+//     mut gizmos: Gizmos,
+//     mut raycast: Raycast,
+//
+// ) {
+//     let ray1 = Ray3d::new(pivot.translation, Vec3::from(pivot.down()));
+//     let hits1 = raycast.debug_cast_ray(
+//         ray1,
+//         &RaycastSettings {
+//             filter: &|entity| ground_q.get(entity).is_ok(),
+//             ..default()
+//         },
+//         &mut gizmos,
+//     );
+//     let hit1 = hits1.first().map(|(_, hit)| hit);
+//     if let Some(hit1) = hit1 {
+//         state.target.y =
+//             hit1.position().y + config.height_max.lerp(config.height_min, state.zoom);
+//     }
+// }
