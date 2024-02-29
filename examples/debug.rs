@@ -101,18 +101,6 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..default()
     });
-    // Camera
-    commands
-        .spawn((
-            TransformBundle {
-                local: Transform::from_translation(Vec3::new(0.0, 5.5, 5.5)),
-                ..default()
-            },
-            CameraPivot,
-        ))
-        .with_children(|parent| {
-            parent.spawn((Camera3dBundle::default(), CameraEye));
-        });
     // Debug Camera
     commands.spawn((
         Camera3dBundle {

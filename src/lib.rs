@@ -27,11 +27,12 @@ impl Plugin for RtsCameraPlugin {
         app.init_resource::<CameraState>()
             .init_resource::<CameraConfig>()
             .init_resource::<CameraControls>()
+            .add_systems(Startup, setup)
             .add_systems(
                 Update,
                 (
                     (zoom, follow_ground, update_eye_transform, pan, rotate),
-                    snap_to_target.run_if(|state: Res<CameraState>| state.snap_to_target),
+                    snap_to_target.run_if(|state: Res<CameraState>| !state.initialized),
                     move_towards_target,
                 )
                     .chain()
@@ -132,7 +133,6 @@ pub struct CameraState {
     /// to the scene, so it can snap to its starting position, ignoring any smoothing.
     /// Defaults to `false`.
     initialized: bool,
-    snap_to_target: bool,
 }
 
 impl Default for CameraState {
@@ -141,7 +141,6 @@ impl Default for CameraState {
             target: Vec3::ZERO,
             zoom: 0.0,
             initialized: false,
-            snap_to_target: false,
         }
     }
 }
@@ -153,7 +152,9 @@ impl CameraState {
 
     pub fn snap_to(&mut self, target: Vec3) {
         self.jump_to(target);
-        self.snap_to_target = true;
+        // Take advantage of the fact that snapping to target is the same thing that happens on
+        // initialization
+        self.initialized = false;
     }
 }
 
@@ -188,6 +189,17 @@ pub struct CameraEye;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
+
+fn setup(mut commands: Commands, pivot_q: Query<&CameraPivot>) {
+    println!("Plugin setup");
+    if pivot_q.is_empty() {
+        commands
+            .spawn((TransformBundle::default(), CameraPivot))
+            .with_children(|parent| {
+                parent.spawn((Camera3dBundle::default(), CameraEye));
+            });
+    }
+}
 
 fn zoom(
     config: Res<CameraConfig>,
@@ -398,7 +410,7 @@ fn snap_to_target(
 
     pivot.translation = state.target;
 
-    state.snap_to_target = false;
+    state.initialized = true;
 }
 
 // fn detect_height(
