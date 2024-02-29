@@ -31,7 +31,6 @@ impl Plugin for RtsCameraPlugin {
                 Update,
                 (
                     (
-                        // initialize,
                         zoom,
                         follow_ground,
                         update_eye_transform,
@@ -177,20 +176,6 @@ impl Default for CameraState {
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct CameraPivot;
 
-// impl RtsCamera {
-//     /// Return the current height of the camera based on the min/max height and the zoom level
-//     fn height(&self) -> f32 {
-//         self.height_max.lerp(self.height_min, self.zoom)
-//     }
-//
-//     /// Return the distance offset to the camera based on the angle and the current height.
-//     /// I.e. this is how far the camera is from what the camera is looking at, ignoring the Y
-//     /// axis.
-//     fn camera_offset(&self) -> f32 {
-//         self.height() * self.angle.tan()
-//     }
-// }
-
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct CameraEye;
 
@@ -199,24 +184,6 @@ pub struct CameraLock;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
-
-// fn initialize(
-//     mut rts_camera: Query<(&Transform, &mut RtsCameraPivot, &Children)>,
-//     mut rts_cam_eye: Query<&mut Transform, (With<RtsCameraEye>, Without<RtsCameraPivot>)>,
-// ) {
-//     for (rts_cam_tfm, mut rts_cam, children) in
-//         rts_camera.iter_mut().filter(|(_, cam, _)| !cam.initialized)
-//     {
-//         rts_cam.target = rts_cam_tfm.translation;
-//         for child in children {
-//             if let Ok(mut eye_tfm) = rts_cam_eye.get_mut(*child) {
-//                 eye_tfm.rotation = Quat::from_rotation_x(rts_cam.angle - 90f32.to_radians());
-//                 eye_tfm.translation.z = rts_cam.camera_offset();
-//             }
-//         }
-//         rts_cam.initialized = true;
-//     }
-// }
 
 fn zoom(
     config: Res<CameraConfig>,
