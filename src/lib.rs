@@ -2,11 +2,12 @@
 // #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
+use std::f32::consts::PI;
+
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_mod_raycast::prelude::{Raycast, RaycastSettings};
-use std::f32::consts::PI;
+use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
 
 /// Bevy plugin that contains the systems for controlling `RtsCamera` components.
 /// # Example
@@ -317,7 +318,6 @@ fn follow_ground(
     mut state: ResMut<CameraState>,
     pivot_q: Query<&Transform, With<CameraPivot>>,
     ground_q: Query<Entity, With<Ground>>,
-    mut gizmos: Gizmos,
     mut raycast: Raycast,
 ) {
     if !config.enabled {
@@ -325,19 +325,9 @@ fn follow_ground(
     }
 
     for pivot in pivot_q.iter() {
-        // todo: add more rays to smooth transition between sudden ground height changes???
-        // Ray starting directly above where the camera is looking, pointing straight down
-        let ray1 = Ray3d::new(pivot.translation, Vec3::from(pivot.down()));
-        let hits1 = raycast.debug_cast_ray(
-            ray1,
-            &RaycastSettings {
-                filter: &|entity| ground_q.get(entity).is_ok(),
-                ..default()
-            },
-            &mut gizmos,
-        );
-        let hit1 = hits1.first().map(|(_, hit)| hit);
-        if let Some(hit1) = hit1 {
+        if let Some(hit1) = cast_ray(&mut raycast, pivot.translation, pivot.down(), &|entity| {
+            ground_q.get(entity).is_ok()
+        }) {
             state.target.y =
                 hit1.position().y + config.height_max.lerp(config.height_min, state.zoom);
         }
@@ -394,17 +384,9 @@ fn snap_to_target(
         return;
     };
 
-    // todo: extract to one-shot system?
-    let ray1 = Ray3d::new(state.target, Vec3::from(pivot.down()));
-    let hits1 = raycast.cast_ray(
-        ray1,
-        &RaycastSettings {
-            filter: &|entity| ground_q.get(entity).is_ok(),
-            ..default()
-        },
-    );
-    let hit1 = hits1.first().map(|(_, hit)| hit);
-    if let Some(hit1) = hit1 {
+    if let Some(hit1) = cast_ray(&mut raycast, pivot.translation, pivot.down(), &|entity| {
+        ground_q.get(entity).is_ok()
+    }) {
         state.target.y = hit1.position().y + config.height_max.lerp(config.height_min, state.zoom);
     }
 
@@ -413,27 +395,19 @@ fn snap_to_target(
     state.initialized = true;
 }
 
-// fn detect_height(
-//     config: Res<CameraConfig>,
-//     mut state: ResMut<CameraState>,
-//     pivot_q: Query<&Transform, With<CameraPivot>>,
-//     ground_q: Query<Entity, With<Ground>>,
-//     mut gizmos: Gizmos,
-//     mut raycast: Raycast,
-//
-// ) {
-//     let ray1 = Ray3d::new(pivot.translation, Vec3::from(pivot.down()));
-//     let hits1 = raycast.debug_cast_ray(
-//         ray1,
-//         &RaycastSettings {
-//             filter: &|entity| ground_q.get(entity).is_ok(),
-//             ..default()
-//         },
-//         &mut gizmos,
-//     );
-//     let hit1 = hits1.first().map(|(_, hit)| hit);
-//     if let Some(hit1) = hit1 {
-//         state.target.y =
-//             hit1.position().y + config.height_max.lerp(config.height_min, state.zoom);
-//     }
-// }
+fn cast_ray<'a>(
+    raycast: &'a mut Raycast<'_, '_>,
+    origin: Vec3,
+    dir: Direction3d,
+    filter: &'a dyn Fn(Entity) -> bool,
+) -> Option<&'a IntersectionData> {
+    let ray1 = Ray3d::new(origin, Vec3::from(dir));
+    let hits1 = raycast.cast_ray(
+        ray1,
+        &RaycastSettings {
+            filter,
+            ..default()
+        },
+    );
+    hits1.first().map(|(_, hit)| hit)
+}
