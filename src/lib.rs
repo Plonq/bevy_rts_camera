@@ -30,14 +30,7 @@ impl Plugin for RtsCameraPlugin {
             .add_systems(
                 Update,
                 (
-                    (
-                        zoom,
-                        follow_ground,
-                        update_eye_transform,
-                        pan.run_if(|q: Query<&CameraLock>| q.is_empty()),
-                        lock.run_if(|q: Query<&CameraLock>| !q.is_empty()),
-                        rotate,
-                    ),
+                    (zoom, follow_ground, update_eye_transform, pan, rotate),
                     snap_to_target.run_if(|state: Res<CameraState>| state.snap_to_target),
                     move_towards_target,
                 )
@@ -154,8 +147,12 @@ impl Default for CameraState {
 }
 
 impl CameraState {
-    pub fn snap_to(&mut self, target: Vec3) {
+    pub fn jump_to(&mut self, target: Vec3) {
         self.target = target;
+    }
+
+    pub fn snap_to(&mut self, target: Vec3) {
+        self.jump_to(target);
         self.snap_to_target = true;
     }
 }
@@ -188,9 +185,6 @@ pub struct CameraPivot;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct CameraEye;
-
-#[derive(Component, Copy, Clone, Debug, PartialEq)]
-pub struct CameraLock;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
@@ -303,21 +297,6 @@ fn pan(
         let new_target =
             state.target + delta.normalize_or_zero() * time.delta_seconds() * 2.0 * config.speed;
         state.target = new_target;
-    }
-}
-
-fn lock(
-    config: Res<CameraConfig>,
-    mut state: ResMut<CameraState>,
-    target_q: Query<&Transform, With<CameraLock>>,
-) {
-    if !config.enabled {
-        return;
-    }
-
-    for target in target_q.iter() {
-        state.target.x = target.translation.x;
-        state.target.z = target.translation.z;
     }
 }
 

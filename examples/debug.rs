@@ -5,12 +5,14 @@
 //!    Space: toggle camera
 //!    L: toggle lock onto target
 
+use std::f32::consts::TAU;
+
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+
 use bevy_rts_camera::{
-    CameraEye, CameraLock, CameraPivot, CameraState, Ground, RtsCameraPlugin, RtsCameraSystemSet,
+    CameraEye, CameraPivot, CameraState, Ground, RtsCameraPlugin, RtsCameraSystemSet,
 };
-use std::f32::consts::TAU;
 
 fn main() {
     App::new()
@@ -22,7 +24,7 @@ fn main() {
             Update,
             (
                 animate_unit,
-                (toggle_lock, swap_cameras, snap_to_location),
+                (lock_or_jump, swap_cameras, snap_to_location),
                 debug,
             )
                 .chain()
@@ -145,19 +147,17 @@ fn animate_unit(
     }
 }
 
-fn toggle_lock(
-    mut commands: Commands,
-    mut cube_q: Query<Entity, With<Move>>,
-    lock_q: Query<&CameraLock, With<Move>>,
+fn lock_or_jump(
+    mut camera_state: ResMut<CameraState>,
     key_input: Res<ButtonInput<KeyCode>>,
+    cube_q: Query<&Transform, With<Move>>,
 ) {
-    if key_input.just_pressed(KeyCode::KeyL) {
-        if let Ok(cube) = cube_q.get_single_mut() {
-            if lock_q.is_empty() {
-                commands.entity(cube).insert(CameraLock);
-            } else {
-                commands.entity(cube).remove::<CameraLock>();
-            }
+    for cube in cube_q.iter() {
+        if key_input.pressed(KeyCode::KeyL) {
+            camera_state.snap_to(cube.translation);
+        }
+        if key_input.just_pressed(KeyCode::KeyK) {
+            camera_state.jump_to(cube.translation);
         }
     }
 }
