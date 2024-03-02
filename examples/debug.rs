@@ -11,7 +11,7 @@ use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use bevy_rts_camera::{
-    CameraEye, CameraPivot, CameraState, Ground, RtsCameraPlugin, RtsCameraSystemSet,
+    CameraEye, CameraPivot, CameraState, Ground, RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
 };
 
 fn main() {
@@ -25,7 +25,7 @@ fn main() {
             (
                 animate_unit,
                 (lock_or_jump, swap_cameras, snap_to_location),
-                debug,
+                // debug,
             )
                 .chain()
                 .before(RtsCameraSystemSet),
@@ -101,6 +101,8 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..default()
     });
+    // Camera
+    commands.spawn((Camera3dBundle::default(), RtsCamera));
     // Debug Camera
     commands.spawn((
         Camera3dBundle {
@@ -161,7 +163,7 @@ fn snap_to_location(
 
 fn swap_cameras(
     mut orbit_cam: Query<(&mut Camera, &mut PanOrbitCamera)>,
-    mut rts_cam: Query<&mut Camera, (With<CameraEye>, Without<PanOrbitCamera>)>,
+    mut rts_cam: Query<&mut Camera, (With<RtsCamera>, Without<PanOrbitCamera>)>,
     button_input: Res<ButtonInput<KeyCode>>,
 ) {
     if button_input.just_pressed(KeyCode::Space) {
@@ -174,8 +176,10 @@ fn swap_cameras(
 }
 
 fn debug(
-    rts_camera: Query<(&GlobalTransform, &CameraPivot), Without<CameraEye>>,
-    rts_cam_eye: Query<&mut GlobalTransform, With<CameraEye>>,
+    camera_state: Res<CameraState>,
+    rts_camera: Query<(&GlobalTransform, &RtsCamera), Without<CameraEye>>,
+    // rts_camera: Query<(&GlobalTransform, &CameraPivot), Without<CameraEye>>,
+    // rts_cam_eye: Query<&mut GlobalTransform, With<CameraEye>>,
     mut gizmos: Gizmos,
 ) {
     for (rts_cam_tfm, _) in rts_camera.iter() {
@@ -189,12 +193,15 @@ fn debug(
         gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.right(), Color::RED);
     }
 
-    for eye_tfm in rts_cam_eye.iter() {
-        gizmos.sphere(eye_tfm.translation(), Quat::IDENTITY, 0.2, Color::PURPLE);
-        gizmos.arrow(
-            eye_tfm.translation(),
-            eye_tfm.translation() + eye_tfm.forward(),
-            Color::PINK,
-        );
-    }
+    gizmos.sphere(
+        camera_state.target.translation,
+        Quat::IDENTITY,
+        0.2,
+        Color::PURPLE,
+    );
+    gizmos.arrow(
+        camera_state.target.translation,
+        camera_state.target.translation + camera_state.target.translation,
+        Color::PINK,
+    );
 }
