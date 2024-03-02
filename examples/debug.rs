@@ -25,7 +25,7 @@ fn main() {
             (
                 animate_unit,
                 (lock_or_jump, swap_cameras, snap_to_location),
-                // debug,
+                debug,
             )
                 .chain()
                 .before(RtsCameraSystemSet),
@@ -177,31 +177,36 @@ fn swap_cameras(
 
 fn debug(
     camera_state: Res<CameraState>,
-    rts_camera: Query<(&GlobalTransform, &RtsCamera), Without<CameraEye>>,
-    // rts_camera: Query<(&GlobalTransform, &CameraPivot), Without<CameraEye>>,
-    // rts_cam_eye: Query<&mut GlobalTransform, With<CameraEye>>,
+    rts_camera: Query<(&Transform, &RtsCamera), Without<CameraEye>>,
     mut gizmos: Gizmos,
 ) {
     for (rts_cam_tfm, _) in rts_camera.iter() {
-        gizmos.ray(
-            rts_cam_tfm.translation(),
-            rts_cam_tfm.forward(),
-            Color::AQUAMARINE,
+        gizmos.sphere(rts_cam_tfm.translation, Quat::IDENTITY, 0.2, Color::PURPLE);
+        gizmos.arrow(
+            rts_cam_tfm.translation,
+            rts_cam_tfm.translation + rts_cam_tfm.forward() * 1.0,
+            Color::PINK,
         );
-        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.back(), Color::BLUE);
-        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.up(), Color::GREEN);
-        gizmos.ray(rts_cam_tfm.translation(), rts_cam_tfm.right(), Color::RED);
     }
 
-    gizmos.sphere(
-        camera_state.target.translation,
-        Quat::IDENTITY,
-        0.2,
-        Color::PURPLE,
+    gizmos.ray(
+        camera_state.target_target.translation,
+        Vec3::from(camera_state.target_target.forward()),
+        Color::AQUAMARINE,
     );
-    gizmos.arrow(
-        camera_state.target.translation,
-        camera_state.target.translation + camera_state.target.translation,
-        Color::PINK,
+    gizmos.ray(
+        camera_state.target_target.translation,
+        Vec3::from(camera_state.target_target.back()),
+        Color::BLUE,
+    );
+    gizmos.ray(
+        camera_state.target_target.translation,
+        Vec3::from(camera_state.target_target.up()),
+        Color::GREEN,
+    );
+    gizmos.ray(
+        camera_state.target_target.translation,
+        Vec3::from(camera_state.target_target.right()),
+        Color::RED,
     );
 }
