@@ -11,7 +11,7 @@ use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use bevy_rts_camera::{
-    CameraEye, CameraPivot, CameraState, Ground, RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
+    CameraSnapTo, CameraTargetTransform, Ground, RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
 };
 
 fn main() {
@@ -22,14 +22,11 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(
             Update,
-            (
-                animate_unit,
-                (lock_or_jump, swap_cameras, snap_to_location),
-                debug,
-            )
+            (animate_unit, (lock_or_jump, swap_cameras))
                 .chain()
                 .before(RtsCameraSystemSet),
         )
+        .add_systems(Update, debug.after(RtsCameraSystemSet))
         .run();
 }
 
@@ -138,26 +135,20 @@ fn animate_unit(
 }
 
 fn lock_or_jump(
-    mut camera_state: ResMut<CameraState>,
+    mut commands: Commands,
+    target_tfm: Res<CameraTargetTransform>,
     key_input: Res<ButtonInput<KeyCode>>,
     cube_q: Query<&Transform, With<Move>>,
 ) {
     for cube in cube_q.iter() {
+        let new_tfm = target_tfm.0.with_translation(cube.translation);
         if key_input.pressed(KeyCode::KeyL) {
-            camera_state.snap_to(cube.translation);
+            commands.insert_resource(CameraTargetTransform(new_tfm));
+            commands.insert_resource(CameraSnapTo(true));
         }
         if key_input.just_pressed(KeyCode::KeyK) {
-            camera_state.jump_to(cube.translation);
+            commands.insert_resource(CameraTargetTransform(new_tfm))
         }
-    }
-}
-
-fn snap_to_location(
-    mut camera_state: ResMut<CameraState>,
-    button_input: Res<ButtonInput<KeyCode>>,
-) {
-    if button_input.just_pressed(KeyCode::KeyT) {
-        camera_state.snap_to(Vec3::new(3.0, 13.0, 3.0));
     }
 }
 
@@ -176,8 +167,8 @@ fn swap_cameras(
 }
 
 fn debug(
-    camera_state: Res<CameraState>,
-    rts_camera: Query<(&Transform, &RtsCamera), Without<CameraEye>>,
+    target_tfm: Res<CameraTargetTransform>,
+    rts_camera: Query<(&Transform, &RtsCamera)>,
     mut gizmos: Gizmos,
 ) {
     for (rts_cam_tfm, _) in rts_camera.iter() {
@@ -190,23 +181,23 @@ fn debug(
     }
 
     gizmos.ray(
-        camera_state.target_target.translation,
-        Vec3::from(camera_state.target_target.forward()),
+        target_tfm.0.translation,
+        Vec3::from(target_tfm.0.forward()),
         Color::AQUAMARINE,
     );
     gizmos.ray(
-        camera_state.target_target.translation,
-        Vec3::from(camera_state.target_target.back()),
+        target_tfm.0.translation,
+        Vec3::from(target_tfm.0.back()),
         Color::BLUE,
     );
     gizmos.ray(
-        camera_state.target_target.translation,
-        Vec3::from(camera_state.target_target.up()),
+        target_tfm.0.translation,
+        Vec3::from(target_tfm.0.up()),
         Color::GREEN,
     );
     gizmos.ray(
-        camera_state.target_target.translation,
-        Vec3::from(camera_state.target_target.right()),
+        target_tfm.0.translation,
+        Vec3::from(target_tfm.0.right()),
         Color::RED,
     );
 }

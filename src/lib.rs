@@ -9,11 +9,11 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
 
-/// Bevy plugin that contains the systems for controlling `RtsCamera` components.
+/// Bevy plugin that provides RTS camera controls.
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
-/// # use bevy_rts_camera::{RtsCameraPlugin, CameraPivot};
+/// # use bevy_rts_camera::{RtsCameraPlugin};
 /// fn main() {
 ///     App::new()
 ///         .add_plugins(DefaultPlugins)
@@ -25,23 +25,23 @@ pub struct RtsCameraPlugin;
 
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<CameraState>()
-            .init_resource::<CameraConfig>()
+        app.init_resource::<CameraConfig>()
             .init_resource::<CameraControls>()
-            .init_resource::<CameraTarget>()
-            .init_resource::<CameraActual>()
+            .init_resource::<CameraSnapTo>()
+            .init_resource::<CameraTargetTransform>()
+            .init_resource::<CameraActualTransform>()
             .init_resource::<CameraTargetZoom>()
             .init_resource::<CameraActualZoom>()
             .add_systems(
                 Update,
                 (
                     zoom,
-                    pan.run_if(|state: Res<CameraState>| !state.snap_to_target),
+                    pan.run_if(resource_equals(CameraSnapTo(false))),
                     rotate,
                     follow_ground,
-                    snap_to_target.run_if(|state: Res<CameraState>| state.snap_to_target),
-                    update_camera_transform,
+                    snap_to_target.run_if(resource_equals(CameraSnapTo(true))),
                     move_towards_target,
+                    update_camera_transform,
                 )
                     .chain()
                     .in_set(RtsCameraSystemSet),
@@ -125,53 +125,7 @@ impl Default for CameraConfig {
 }
 
 #[derive(Resource, Debug, PartialEq, Clone)]
-pub struct CameraState {
-    /// The current zoom level of the camera, defined as a percentage of the distance between the
-    /// minimum height and maximum height. A value of `1.0` is 100% zoom (min height), and a value
-    /// of `0.0` is 0% zoom (maximum height). Automatically updated when zooming with the scroll
-    /// wheel.
-    /// Defaults to `0.0`.
-    zoom: f32,
-    target_zoom: f32,
-    /// The target position of the camera (the entity with `RtsCamera` specifically). The camera's
-    /// actual position will move towards this based on `smoothness` every frame.
-    /// Automatically updated based upon inputs.
-    /// Defaults to `Vec3::ZERO`.
-    target: Transform,
-    // todo: private
-    pub target_target: Transform,
-    /// Whether the camera has initialized. This is primarily used when the camera is first added
-    /// to the scene, so it can snap to its starting position, ignoring any smoothing.
-    /// Defaults to `true`.
-    snap_to_target: bool,
-}
-
-impl Default for CameraState {
-    fn default() -> Self {
-        CameraState {
-            target: Transform::IDENTITY,
-            target_target: Transform::IDENTITY,
-            zoom: 0.0,
-            target_zoom: 0.0,
-            snap_to_target: true,
-        }
-    }
-}
-
-impl CameraState {
-    pub fn jump_to(&mut self, target: Vec3) {
-        self.target_target.translation = target;
-    }
-
-    pub fn snap_to(&mut self, target: Vec3) {
-        self.jump_to(target);
-        self.target.translation = self.target_target.translation;
-        self.snap_to_target = true;
-    }
-}
-
-#[derive(Resource, Debug, PartialEq, Clone)]
-struct CameraSnapTo(bool);
+pub struct CameraSnapTo(pub bool);
 
 impl Default for CameraSnapTo {
     fn default() -> Self {
@@ -180,13 +134,13 @@ impl Default for CameraSnapTo {
 }
 
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
-struct CameraTarget(Transform);
+pub struct CameraTargetTransform(pub Transform);
 
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
-struct CameraActual(Transform);
+struct CameraActualTransform(Transform);
 
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
-struct CameraTargetZoom(f32);
+pub struct CameraTargetZoom(pub f32);
 
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
 struct CameraActualZoom(f32);
@@ -198,7 +152,7 @@ struct CameraActualZoom(f32);
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
-/// # use bevy_rts_camera::{RtsCameraPlugin, CameraPivot};
+/// # use bevy_rts_camera::{RtsCameraPlugin, RtsCamera};
 /// # fn main() {
 /// #     App::new()
 /// #         .add_plugins(DefaultPlugins)
@@ -210,7 +164,7 @@ struct CameraActualZoom(f32);
 ///     commands
 ///         .spawn((
 ///             Camera3dBundle::default(),
-///             CameraPivot::default(),
+///             RtsCamera,
 ///         ));
 ///  }
 /// ```
@@ -218,17 +172,11 @@ struct CameraActualZoom(f32);
 pub struct RtsCamera;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
-pub struct CameraPivot;
-
-#[derive(Component, Copy, Clone, Debug, PartialEq)]
-pub struct CameraEye;
-
-#[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
 
 fn zoom(
     config: Res<CameraConfig>,
-    mut state: ResMut<CameraState>,
+    mut target_zoom: ResMut<CameraTargetZoom>,
     mut mouse_wheel: EventReader<MouseWheel>,
 ) {
     if !config.enabled {
@@ -242,15 +190,15 @@ fn zoom(
             MouseScrollUnit::Pixel => event.y * 0.001,
         })
         .fold(0.0, |acc, val| acc + val);
-    let new_zoom = (state.target_zoom + zoom_amount * 0.5).clamp(0.0, 1.0);
-    state.target_zoom = new_zoom;
+    let new_zoom = (target_zoom.0 + zoom_amount * 0.5).clamp(0.0, 1.0);
+    target_zoom.0 = new_zoom;
 }
 
 #[allow(clippy::too_many_arguments)]
 fn pan(
     config: Res<CameraConfig>,
     controls: Res<CameraControls>,
-    mut state: ResMut<CameraState>,
+    mut target_tfm: ResMut<CameraTargetTransform>,
     button_input: Res<ButtonInput<KeyCode>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
@@ -264,16 +212,16 @@ fn pan(
 
     // Keyboard pan
     if button_input.pressed(controls.key_up) {
-        delta += Vec3::from(state.target_target.forward())
+        delta += Vec3::from(target_tfm.0.forward())
     }
     if button_input.pressed(controls.key_down) {
-        delta += Vec3::from(state.target_target.back())
+        delta += Vec3::from(target_tfm.0.back())
     }
     if button_input.pressed(controls.key_left) {
-        delta += Vec3::from(state.target_target.left())
+        delta += Vec3::from(target_tfm.0.left())
     }
     if button_input.pressed(controls.key_right) {
-        delta += Vec3::from(state.target_target.right())
+        delta += Vec3::from(target_tfm.0.right())
     }
 
     // Edge pan
@@ -285,32 +233,33 @@ fn pan(
                 let pan_width = win_h * config.edge_pan_width;
                 // Pan left
                 if cursor_position.x < pan_width {
-                    delta += Vec3::from(state.target_target.left())
+                    delta += Vec3::from(target_tfm.0.left())
                 }
                 // Pan right
                 if cursor_position.x > win_w - pan_width {
-                    delta += Vec3::from(state.target_target.right())
+                    delta += Vec3::from(target_tfm.0.right())
                 }
                 // Pan up
                 if cursor_position.y < pan_width {
-                    delta += Vec3::from(state.target_target.forward())
+                    delta += Vec3::from(target_tfm.0.forward())
                 }
                 // Pan down
                 if cursor_position.y > win_h - pan_width {
-                    delta += Vec3::from(state.target_target.back())
+                    delta += Vec3::from(target_tfm.0.back())
                 }
             }
         }
     }
 
-    let new_target = state.target_target.translation
+    let new_target = target_tfm.0.translation
         + delta.normalize_or_zero() * time.delta_seconds() * 2.0 * config.pan_speed;
-    state.target_target.translation = new_target;
+    target_tfm.0.translation = new_target;
 }
 
 fn follow_ground(
     config: Res<CameraConfig>,
-    mut state: ResMut<CameraState>,
+    mut target_tfm: ResMut<CameraTargetTransform>,
+    target_zoom: ResMut<CameraTargetZoom>,
     ground_q: Query<Entity, With<Ground>>,
     mut raycast: Raycast,
 ) {
@@ -319,20 +268,20 @@ fn follow_ground(
     }
 
     let ray_start = Vec3::new(
-        state.target_target.translation.x,
-        state.target_target.translation.y + config.height_max,
-        state.target_target.translation.z,
+        target_tfm.0.translation.x,
+        target_tfm.0.translation.y + config.height_max,
+        target_tfm.0.translation.z,
     );
     if let Some(hit1) = cast_ray(&mut raycast, ray_start, Direction3d::NEG_Y, &|entity| {
         ground_q.get(entity).is_ok()
     }) {
-        state.target_target.translation.y =
-            hit1.position().y + config.height_max.lerp(config.height_min, state.target_zoom);
+        target_tfm.0.translation.y =
+            hit1.position().y + config.height_max.lerp(config.height_min, target_zoom.0);
     }
 }
 
 fn rotate(
-    mut state: ResMut<CameraState>,
+    mut target_tfm: ResMut<CameraTargetTransform>,
     config: Res<CameraConfig>,
     controls: Res<CameraControls>,
     mouse_input: Res<ButtonInput<MouseButton>>,
@@ -349,45 +298,58 @@ fn rotate(
             // Adjust based on window size, so that moving mouse entire width of window
             // will be one half rotation (180 degrees)
             let delta_x = mouse_delta.x / primary_window.width() * PI;
-            state.target_target.rotate_local_y(-delta_x);
+            target_tfm.0.rotate_local_y(-delta_x);
         }
     }
 }
 
 fn update_camera_transform(
-    state: Res<CameraState>,
+    zoom: Res<CameraActualZoom>,
+    tfm: Res<CameraActualTransform>,
     config: Res<CameraConfig>,
     mut camera_q: Query<&mut Transform, With<RtsCamera>>,
 ) {
     if let Ok(mut camera) = camera_q.get_single_mut() {
         let rotation = Quat::from_rotation_x(config.angle - 90f32.to_radians());
         let camera_offset =
-            (config.height_max.lerp(config.height_min, state.zoom)) * config.angle.tan();
-        camera.rotation = state.target.rotation * rotation;
-        camera.translation = state.target.translation + state.target.back() * camera_offset;
+            (config.height_max.lerp(config.height_min, zoom.0)) * config.angle.tan();
+        camera.rotation = tfm.0.rotation * rotation;
+        camera.translation = tfm.0.translation + tfm.0.back() * camera_offset;
     }
 }
 
-fn move_towards_target(mut state: ResMut<CameraState>, config: Res<CameraConfig>, time: Res<Time>) {
-    state.target.translation = state.target.translation.lerp(
-        state.target_target.translation,
+fn move_towards_target(
+    mut tfm: ResMut<CameraActualTransform>,
+    target_tfm: Res<CameraTargetTransform>,
+    mut zoom: ResMut<CameraActualZoom>,
+    target_zoom: Res<CameraTargetZoom>,
+    config: Res<CameraConfig>,
+    time: Res<Time>,
+) {
+    tfm.0.translation = tfm.0.translation.lerp(
+        target_tfm.0.translation,
         1.0 - config.smoothness.powi(7).powf(time.delta_seconds()),
     );
-    state.target.rotation = state.target.rotation.lerp(
-        state.target_target.rotation,
+    tfm.0.rotation = tfm.0.rotation.lerp(
+        target_tfm.0.rotation,
         1.0 - config.smoothness.powi(7).powf(time.delta_seconds()),
     );
-    state.zoom = state.zoom.lerp(
-        state.target_zoom,
+    zoom.0 = zoom.0.lerp(
+        target_zoom.0,
         1.0 - config.smoothness.powi(7).powf(time.delta_seconds()),
     );
 }
 
-fn snap_to_target(mut state: ResMut<CameraState>) {
-    // Don't want to snap zoom because that's independent of 'locking onto' a target
-    state.target.translation = state.target_target.translation;
-    state.target.rotation = state.target_target.rotation;
-    state.snap_to_target = false;
+fn snap_to_target(
+    mut tfm: ResMut<CameraActualTransform>,
+    target_tfm: Res<CameraTargetTransform>,
+    mut snap_to: ResMut<CameraSnapTo>,
+) {
+    // When snapping in a top down camera, only the XZ should be snapped. The Y coord is controlled
+    // by zoom and that should remain smoothed, as should rotation.
+    tfm.0.translation.x = target_tfm.0.translation.x;
+    tfm.0.translation.z = target_tfm.0.translation.z;
+    snap_to.0 = false;
 }
 
 fn cast_ray<'a>(
