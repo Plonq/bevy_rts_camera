@@ -1,14 +1,10 @@
-//! This example is set up for debugging. It draws gizmos to indicate various aspects, and you
-//! can toggle between the RTS camera view and an orbit camera in order to see a different
-//! perspective and how the camera behaves in different circumstances.
-//!
-//!    Space: toggle camera
-//!    L: toggle lock onto target
+//! A more complex scene with a moving "unit" that demonstrates how to jump to a location or lock
+//! onto a particular entity.
 
 use std::f32::consts::TAU;
 
 use bevy::prelude::*;
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_panorbit_camera::PanOrbitCameraPlugin;
 
 use bevy_rts_camera::{
     CameraSnapTo, CameraTargetTransform, Ground, RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
@@ -22,11 +18,8 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(
             Update,
-            (animate_unit, (lock_or_jump, swap_cameras))
-                .chain()
-                .before(RtsCameraSystemSet),
+            (move_unit, lock_or_jump).chain().before(RtsCameraSystemSet),
         )
-        .add_systems(Update, debug.after(RtsCameraSystemSet))
         .run();
 }
 
@@ -50,14 +43,6 @@ fn setup(
     let terrain_material = materials.add(Color::rgb(0.8, 0.7, 0.6));
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Cuboid::new(1.0, 0.5, 1.0)),
-            material: terrain_material.clone(),
-            transform: Transform::from_xyz(0.0, 0.25, 0.0),
-            ..default()
-        })
-        .insert(Ground);
-    commands
-        .spawn(PbrBundle {
             mesh: meshes.add(Cuboid::new(3.0, 0.2, 1.0)),
             material: terrain_material.clone(),
             transform: Transform::from_xyz(3.0, 0.1, -1.0),
@@ -66,21 +51,32 @@ fn setup(
         .insert(Ground);
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Cuboid::new(2.0, 0.3, 3.0)),
+            mesh: meshes.add(Cuboid::new(2.0, 1.0, 3.0)),
             material: terrain_material.clone(),
-            transform: Transform::from_xyz(-3.0, 0.15, 0.0),
+            transform: Transform::from_xyz(-3.0, 0.5, 0.0),
             ..default()
         })
         .insert(Ground);
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Sphere::new(3.0)),
+            mesh: meshes.add(Sphere::new(2.5)),
             material: terrain_material.clone(),
-            transform: Transform::from_xyz(-5.0, 0.0, 3.0),
+            transform: Transform::from_xyz(0.0, 0.0, -4.2),
             ..default()
         })
         .insert(Ground);
-    // A moving unit
+    // Some generic units that are not part of the 'Ground' (ignored for height calculation)
+    for x in -5..5 {
+        for z in -5..5 {
+            commands.spawn(PbrBundle {
+                mesh: meshes.add(Capsule3d::new(0.08, 0.22)),
+                material: terrain_material.clone(),
+                transform: Transform::from_xyz(x as f32 / 5.0, 0.19, z as f32 / 5.0),
+                ..default()
+            });
+        }
+    }
+    // A moving unit that can be locked onto
     commands
         .spawn(PbrBundle {
             mesh: meshes.add(Capsule3d::new(0.1, 0.3)),
@@ -100,27 +96,22 @@ fn setup(
     });
     // Camera
     commands.spawn((Camera3dBundle::default(), RtsCamera));
-    // Debug Camera
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(8.0, 1.0, 14.0))
-                .looking_at(Vec3::ZERO, Vec3::Y),
-            camera: Camera {
-                is_active: false,
-                ..default()
-            },
-            ..default()
+    // Help text
+    commands.spawn(TextBundle {
+        text: Text {
+            sections: vec![TextSection {
+                value: "Press K to jump to the moving unit\nHold L to lock onto the moving unit"
+                    .to_string(),
+                ..Default::default()
+            }],
+            ..Default::default()
         },
-        PanOrbitCamera {
-            enabled: false,
-            zoom_sensitivity: 0.0,
-            ..default()
-        },
-    ));
+        ..default()
+    });
 }
 
-/// Move the cube in a circle around the Y axis
-fn animate_unit(
+// Move a unit in a circle
+fn move_unit(
     time: Res<Time>,
     mut cube_q: Query<&mut Transform, With<Move>>,
     mut angle: Local<f32>,
@@ -134,6 +125,7 @@ fn animate_unit(
     }
 }
 
+// Either jump to the moving unit (press K) or lock onto it (hold L)
 fn lock_or_jump(
     mut commands: Commands,
     target_tfm: Res<CameraTargetTransform>,
@@ -150,54 +142,4 @@ fn lock_or_jump(
             commands.insert_resource(CameraTargetTransform(new_tfm))
         }
     }
-}
-
-fn swap_cameras(
-    mut orbit_cam: Query<(&mut Camera, &mut PanOrbitCamera)>,
-    mut rts_cam: Query<&mut Camera, (With<RtsCamera>, Without<PanOrbitCamera>)>,
-    button_input: Res<ButtonInput<KeyCode>>,
-) {
-    if button_input.just_pressed(KeyCode::Space) {
-        let (mut orbit_camera, mut orbit_cam) = orbit_cam.get_single_mut().unwrap();
-        let mut rts_cam = rts_cam.get_single_mut().unwrap();
-        orbit_camera.is_active = !orbit_camera.is_active;
-        orbit_cam.enabled = orbit_camera.is_active;
-        rts_cam.is_active = !rts_cam.is_active;
-    }
-}
-
-fn debug(
-    target_tfm: Res<CameraTargetTransform>,
-    rts_camera: Query<(&Transform, &RtsCamera)>,
-    mut gizmos: Gizmos,
-) {
-    for (rts_cam_tfm, _) in rts_camera.iter() {
-        gizmos.sphere(rts_cam_tfm.translation, Quat::IDENTITY, 0.2, Color::PURPLE);
-        gizmos.arrow(
-            rts_cam_tfm.translation,
-            rts_cam_tfm.translation + rts_cam_tfm.forward() * 1.0,
-            Color::PINK,
-        );
-    }
-
-    gizmos.ray(
-        target_tfm.0.translation,
-        Vec3::from(target_tfm.0.forward()),
-        Color::AQUAMARINE,
-    );
-    gizmos.ray(
-        target_tfm.0.translation,
-        Vec3::from(target_tfm.0.back()),
-        Color::BLUE,
-    );
-    gizmos.ray(
-        target_tfm.0.translation,
-        Vec3::from(target_tfm.0.up()),
-        Color::GREEN,
-    );
-    gizmos.ray(
-        target_tfm.0.translation,
-        Vec3::from(target_tfm.0.right()),
-        Color::RED,
-    );
 }

@@ -1,5 +1,4 @@
-// todo: re-enable
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
 use std::f32::consts::PI;
@@ -54,19 +53,26 @@ impl Plugin for RtsCameraPlugin {
     }
 }
 
-/// Base system set to allow ordering of `RtsCamera`
+/// System set containing all the systems that control the RTS camera.
+/// If you want to control the camera manually in any way (e.g. snapping to a specific location),
+/// you should run that before this system set.
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct RtsCameraSystemSet;
 
+/// RTS camera controls
 #[derive(Resource, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct CameraControls {
-    /// The key that will pan the camera up (or forward)
+    /// The key that will pan the camera up (or forward).
+    /// Defaults to `KeyCode::KeyW`.
     pub key_up: KeyCode,
-    /// The key that will pan the camera down (or backward)
+    /// The key that will pan the camera down (or backward).
+    /// Defaults to `KeyCode::KeyS`.
     pub key_down: KeyCode,
-    /// The key that will pan the camera left
+    /// The key that will pan the camera left.
+    /// Defaults to `KeyCode::KeyA`.
     pub key_left: KeyCode,
-    /// The key that will pan the camera right
+    /// The key that will pan the camera right.
+    /// Defaults to `KeyCode::KeyD`.
     pub key_right: KeyCode,
     /// The mouse button used to rotate the camera.
     /// Defaults to `MouseButton::Middle`.
@@ -85,6 +91,7 @@ impl Default for CameraControls {
     }
 }
 
+/// RTS camera configuration
 #[derive(Resource, Debug, PartialEq, Clone)]
 pub struct CameraConfig {
     /// How far away from the side of the screen edge pan will kick in, defined as a percentage
@@ -95,14 +102,15 @@ pub struct CameraConfig {
     /// second.
     /// Defaults to `1.0`.
     pub pan_speed: f32,
-    /// The minimum height the camera can zoom in to. Should be set to a value that avoids clipping.
-    /// Defaults to `0.1`.
+    /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.
+    /// Should be set to a value that avoids clipping.
+    /// Defaults to `0.5`.
     pub height_min: f32,
-    /// The maximum height the camera can zoom out to.
-    /// Defaults to `5.0`.
+    /// The maximum height the camera can zoom out to, or the height of the camera at `0.0` zoom.
+    /// Defaults to `10.0`.
     pub height_max: f32,
-    /// The angle of the camera, where a value of `0.0` is looking directly down (-Y), and a value
-    /// of `TAU / 4.0` (90 degrees) is looking directly forward. Measured in radians.
+    /// The angle in radians of the camera, where a value of `0.0` is looking directly down (-Y),
+    /// and a value of `TAU / 4.0` (90 degrees) is looking directly forward.
     /// Defaults to 25 degrees.
     pub angle: f32,
     /// The amount of smoothing applied to the camera movement. Should be a value between `0.0` and
@@ -110,8 +118,9 @@ pub struct CameraConfig {
     /// move).
     /// Defaults to `0.9`.
     pub smoothness: f32,
-    /// Whether `RtsCamera` is enabled. When disabled, all input will be ignored, but it will still
-    /// move towards the `target`.
+    /// Whether RTS camera controls are enabled. When disabled, all input will be ignored. However,
+    /// you can still control the camera manually, and movement will still be smoothed.
+    /// Defaults to `true`.
     pub enabled: bool,
 }
 
@@ -129,6 +138,10 @@ impl Default for CameraConfig {
     }
 }
 
+/// Whether the camera to should snap to the target location, instead of smoothly moving towards it.
+/// This is useful for locking onto targets (e.g. to follow a certain unit). It also starts out
+/// true so that the camera initializes cleanly instead of moving smoothly from world origin to its
+/// starting location.
 #[derive(Resource, Debug, PartialEq, Clone)]
 pub struct CameraSnapTo(pub bool);
 
@@ -138,22 +151,33 @@ impl Default for CameraSnapTo {
     }
 }
 
+/// The target position and rotation of the camera.
+/// You can use this to 'jump' to a specific location or rotation.
+/// Any changes to this transform will be smoothly transitioned to. If you want to 'snap' to a
+/// specific position, you should insert `CameraSnapTo(true)` immediately after inserting this.
+/// Should only be updated before
+/// `RtsCameraSystemSet`.
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
 pub struct CameraTargetTransform(pub Transform);
 
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
 struct CameraActualTransform(Transform);
 
+/// The target zoom of the camera, measured as a percentage between `CameraConfig.height_max` and
+/// `CameraConfig.height_min`. I.e., no zoom is max height and max zoom is min height.
+/// You can use this to 'jump' to a specific zoom level.
+/// Any changes to this value will be smoothly transitioned to.
+/// Should only be updated before
+/// `RtsCameraSystemSet`.
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
 pub struct CameraTargetZoom(pub f32);
 
 #[derive(Resource, Default, Debug, PartialEq, Clone)]
 struct CameraActualZoom(f32);
 
-/// Tags an entity as capable of panning and orbiting, and provides a way to configure the
-/// camera's behaviour and controls.
-/// The entity must have `Transform` and `Projection` components. Typically you would add a
-/// `Camera3dBundle` which already contains these.
+/// Marks a camera to be used as an RTS camera.
+/// Only one instance of this component should exist at any given moment.
+/// Typically you'll add this alongside a `Camera3dBundle`.
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
@@ -176,6 +200,9 @@ struct CameraActualZoom(f32);
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCamera;
 
+/// Marks an entity that should be treated as 'ground'. The RTS camera will stay a certain distance
+/// (based on min/max height and zoom) above any meshes marked with this component.
+/// You'll likely want to mark all terrain meshes, but not things like buildings, trees, or units.
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
 
@@ -199,7 +226,6 @@ fn zoom(
     target_zoom.0 = new_zoom;
 }
 
-#[allow(clippy::too_many_arguments)]
 fn pan(
     config: Res<CameraConfig>,
     controls: Res<CameraControls>,
