@@ -35,10 +35,15 @@ impl Plugin for RtsCameraPlugin {
             .add_systems(
                 Update,
                 (
-                    zoom,
-                    pan.run_if(resource_equals(CameraSnapTo(false))),
-                    rotate,
-                    follow_ground,
+                    (
+                        (
+                            zoom,
+                            pan.run_if(resource_equals(CameraSnapTo(false))),
+                            rotate,
+                        ),
+                        follow_ground,
+                    )
+                        .chain(),
                     snap_to_target.run_if(resource_equals(CameraSnapTo(true))),
                     move_towards_target,
                     update_camera_transform,
@@ -303,19 +308,16 @@ fn rotate(
     }
 }
 
-fn update_camera_transform(
-    zoom: Res<CameraActualZoom>,
-    tfm: Res<CameraActualTransform>,
-    config: Res<CameraConfig>,
-    mut camera_q: Query<&mut Transform, With<RtsCamera>>,
+fn snap_to_target(
+    mut tfm: ResMut<CameraActualTransform>,
+    target_tfm: Res<CameraTargetTransform>,
+    mut snap_to: ResMut<CameraSnapTo>,
 ) {
-    if let Ok(mut camera) = camera_q.get_single_mut() {
-        let rotation = Quat::from_rotation_x(config.angle - 90f32.to_radians());
-        let camera_offset =
-            (config.height_max.lerp(config.height_min, zoom.0)) * config.angle.tan();
-        camera.rotation = tfm.0.rotation * rotation;
-        camera.translation = tfm.0.translation + tfm.0.back() * camera_offset;
-    }
+    // When snapping in a top down camera, only the XZ should be snapped. The Y coord is controlled
+    // by zoom and that should remain smoothed, as should rotation.
+    tfm.0.translation.x = target_tfm.0.translation.x;
+    tfm.0.translation.z = target_tfm.0.translation.z;
+    snap_to.0 = false;
 }
 
 fn move_towards_target(
@@ -340,16 +342,19 @@ fn move_towards_target(
     );
 }
 
-fn snap_to_target(
-    mut tfm: ResMut<CameraActualTransform>,
-    target_tfm: Res<CameraTargetTransform>,
-    mut snap_to: ResMut<CameraSnapTo>,
+fn update_camera_transform(
+    zoom: Res<CameraActualZoom>,
+    tfm: Res<CameraActualTransform>,
+    config: Res<CameraConfig>,
+    mut camera_q: Query<&mut Transform, With<RtsCamera>>,
 ) {
-    // When snapping in a top down camera, only the XZ should be snapped. The Y coord is controlled
-    // by zoom and that should remain smoothed, as should rotation.
-    tfm.0.translation.x = target_tfm.0.translation.x;
-    tfm.0.translation.z = target_tfm.0.translation.z;
-    snap_to.0 = false;
+    if let Ok(mut camera) = camera_q.get_single_mut() {
+        let rotation = Quat::from_rotation_x(config.angle - 90f32.to_radians());
+        let camera_offset =
+            (config.height_max.lerp(config.height_min, zoom.0)) * config.angle.tan();
+        camera.rotation = tfm.0.rotation * rotation;
+        camera.translation = tfm.0.translation + tfm.0.back() * camera_offset;
+    }
 }
 
 fn cast_ray<'a>(
