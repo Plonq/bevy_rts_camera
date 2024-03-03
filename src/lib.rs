@@ -28,15 +28,19 @@ impl Plugin for RtsCameraPlugin {
         app.init_resource::<CameraState>()
             .init_resource::<CameraConfig>()
             .init_resource::<CameraControls>()
+            .init_resource::<CameraTarget>()
+            .init_resource::<CameraActual>()
+            .init_resource::<CameraTargetZoom>()
+            .init_resource::<CameraActualZoom>()
             .add_systems(
                 Update,
                 (
                     zoom,
-                    pan,
-                    follow_ground,
+                    pan.run_if(|state: Res<CameraState>| !state.snap_to_target),
                     rotate,
+                    follow_ground,
+                    snap_to_target.run_if(|state: Res<CameraState>| state.snap_to_target),
                     update_camera_transform,
-                    // snap_to_target.run_if(|state: Res<CameraState>| !state.initialized),
                     move_towards_target,
                 )
                     .chain()
@@ -133,12 +137,13 @@ pub struct CameraState {
     /// actual position will move towards this based on `smoothness` every frame.
     /// Automatically updated based upon inputs.
     /// Defaults to `Vec3::ZERO`.
-    pub target: Transform,
+    target: Transform,
+    // todo: private
     pub target_target: Transform,
     /// Whether the camera has initialized. This is primarily used when the camera is first added
     /// to the scene, so it can snap to its starting position, ignoring any smoothing.
-    /// Defaults to `false`.
-    initialized: bool,
+    /// Defaults to `true`.
+    snap_to_target: bool,
 }
 
 impl Default for CameraState {
@@ -148,23 +153,43 @@ impl Default for CameraState {
             target_target: Transform::IDENTITY,
             zoom: 0.0,
             target_zoom: 0.0,
-            initialized: false,
+            snap_to_target: true,
         }
     }
 }
 
 impl CameraState {
     pub fn jump_to(&mut self, target: Vec3) {
-        // self.target = target;
+        self.target_target.translation = target;
     }
 
     pub fn snap_to(&mut self, target: Vec3) {
         self.jump_to(target);
-        // Take advantage of the fact that snapping to target is the same thing that happens on
-        // initialization
-        self.initialized = false;
+        self.target.translation = self.target_target.translation;
+        self.snap_to_target = true;
     }
 }
+
+#[derive(Resource, Debug, PartialEq, Clone)]
+struct CameraSnapTo(bool);
+
+impl Default for CameraSnapTo {
+    fn default() -> Self {
+        CameraSnapTo(true)
+    }
+}
+
+#[derive(Resource, Default, Debug, PartialEq, Clone)]
+struct CameraTarget(Transform);
+
+#[derive(Resource, Default, Debug, PartialEq, Clone)]
+struct CameraActual(Transform);
+
+#[derive(Resource, Default, Debug, PartialEq, Clone)]
+struct CameraTargetZoom(f32);
+
+#[derive(Resource, Default, Debug, PartialEq, Clone)]
+struct CameraActualZoom(f32);
 
 /// Tags an entity as capable of panning and orbiting, and provides a way to configure the
 /// camera's behaviour and controls.
@@ -200,20 +225,6 @@ pub struct CameraEye;
 
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
-
-fn update_camera_transform(
-    state: Res<CameraState>,
-    config: Res<CameraConfig>,
-    mut camera_q: Query<&mut Transform, With<RtsCamera>>,
-) {
-    if let Ok(mut camera) = camera_q.get_single_mut() {
-        let rotation = Quat::from_rotation_x(config.angle - 90f32.to_radians());
-        let camera_offset =
-            (config.height_max.lerp(config.height_min, state.zoom)) * config.angle.tan();
-        camera.rotation = state.target.rotation * rotation;
-        camera.translation = state.target.translation + state.target.back() * camera_offset;
-    }
-}
 
 fn zoom(
     config: Res<CameraConfig>,
@@ -343,6 +354,20 @@ fn rotate(
     }
 }
 
+fn update_camera_transform(
+    state: Res<CameraState>,
+    config: Res<CameraConfig>,
+    mut camera_q: Query<&mut Transform, With<RtsCamera>>,
+) {
+    if let Ok(mut camera) = camera_q.get_single_mut() {
+        let rotation = Quat::from_rotation_x(config.angle - 90f32.to_radians());
+        let camera_offset =
+            (config.height_max.lerp(config.height_min, state.zoom)) * config.angle.tan();
+        camera.rotation = state.target.rotation * rotation;
+        camera.translation = state.target.translation + state.target.back() * camera_offset;
+    }
+}
+
 fn move_towards_target(mut state: ResMut<CameraState>, config: Res<CameraConfig>, time: Res<Time>) {
     state.target.translation = state.target.translation.lerp(
         state.target_target.translation,
@@ -358,27 +383,11 @@ fn move_towards_target(mut state: ResMut<CameraState>, config: Res<CameraConfig>
     );
 }
 
-fn snap_to_target(
-    mut state: ResMut<CameraState>,
-    config: Res<CameraConfig>,
-    mut pivot_q: Query<&mut Transform, With<CameraPivot>>,
-    ground_q: Query<Entity, With<Ground>>,
-    mut raycast: Raycast,
-) {
-    let Ok(mut pivot) = pivot_q.get_single_mut() else {
-        return;
-    };
-
-    if let Some(hit1) = cast_ray(&mut raycast, pivot.translation, pivot.down(), &|entity| {
-        ground_q.get(entity).is_ok()
-    }) {
-        state.target.translation.y =
-            hit1.position().y + config.height_max.lerp(config.height_min, state.zoom);
-    }
-
-    pivot.translation = state.target.translation;
-
-    state.initialized = true;
+fn snap_to_target(mut state: ResMut<CameraState>) {
+    // Don't want to snap zoom because that's independent of 'locking onto' a target
+    state.target.translation = state.target_target.translation;
+    state.target.rotation = state.target_target.rotation;
+    state.snap_to_target = false;
 }
 
 fn cast_ray<'a>(
