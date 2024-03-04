@@ -98,8 +98,7 @@ pub struct CameraConfig {
     /// of the window's height. Set to `0.0` to disable edge panning.
     /// Defaults to `0.05` (5%).
     pub edge_pan_width: f32,
-    /// Speed of camera pan (either via keyboard controls or edge panning), measured in units per
-    /// second.
+    /// Speed of camera pan (either via keyboard controls or edge panning).
     /// Defaults to `1.0`.
     pub pan_speed: f32,
     /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.
