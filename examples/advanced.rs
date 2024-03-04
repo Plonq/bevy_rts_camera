@@ -4,17 +4,41 @@
 use std::f32::consts::TAU;
 
 use bevy::prelude::*;
-use bevy_panorbit_camera::PanOrbitCameraPlugin;
 
 use bevy_rts_camera::{
-    CameraSnapTo, CameraTargetTransform, Ground, RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
+    CameraConfig, CameraControls, CameraSnapTo, CameraTargetTransform, Ground, RtsCamera,
+    RtsCameraPlugin, RtsCameraSystemSet,
 };
 
 fn main() {
     App::new()
+        .insert_resource(CameraConfig {
+            // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
+            edge_pan_width: 0.1,
+            // 150% pan speed
+            pan_speed: 1.5,
+            // Increase min height (or decrease max zoom)
+            height_min: 1.5,
+            // Increase max height (or decrease min zoom)
+            height_max: 20.0,
+            // Change the angle of the camera to 10 degrees (0 is looking straight down)
+            angle: 10.0f32.to_radians(),
+            // Decrease smoothing
+            smoothness: 0.1,
+            // Keep it enabled (wouldn't be much of a demo if this is false)
+            enabled: true,
+        })
+        .insert_resource(CameraControls {
+            // Change pan controls to WASD
+            key_up: KeyCode::KeyW,
+            key_down: KeyCode::KeyS,
+            key_left: KeyCode::KeyA,
+            key_right: KeyCode::KeyD,
+            // Change rotate to right click
+            button_rotate: MouseButton::Right,
+        })
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
-        .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
         .add_systems(
             Update,
