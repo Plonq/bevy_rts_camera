@@ -26,7 +26,6 @@ fn setup(
             ..default()
         })
         // Add `Ground` component to any mesh you want the camera to treat as ground.
-        // todo: scale of everything?
         .insert(Ground);
     // Some "terrain"
     let terrain_material = materials.add(Color::rgb(0.8, 0.7, 0.6));
