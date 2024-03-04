@@ -82,10 +82,10 @@ pub struct CameraControls {
 impl Default for CameraControls {
     fn default() -> Self {
         CameraControls {
-            key_up: KeyCode::KeyW,
-            key_down: KeyCode::KeyS,
-            key_left: KeyCode::KeyA,
-            key_right: KeyCode::KeyD,
+            key_up: KeyCode::ArrowUp,
+            key_down: KeyCode::ArrowDown,
+            key_left: KeyCode::ArrowLeft,
+            key_right: KeyCode::ArrowRight,
             button_rotate: MouseButton::Middle,
         }
     }

@@ -10,41 +10,35 @@
 
 ## Summary
 
-[//]: # (TODO)
-Bevy RTS Camera provides RTS-style camera controls for Bevy Engine, to get your game up and running quickly.
+Bevy RTS Camera provides an RTS-style camera for Bevy Engine, to get your game up and running quickly. Designed for
+simple use cases, and does not try to cover advanced requirements.
 
 ## Features:
 
-[//]: # (TODO)
-
-- [x] Smooth panning across ground and follow terrain height
-- [x] Zoom
-- [x] Edge pan
-- [x] rotate around Y (up)
-- [x] Lock onto entity (smoothed)
-- [x] Custom pan controls
-- [x] Custom speed
-- [x] Custom edge pan width
-- [x] Custom max/min height
-- [x] Custom smoothness
-- [x] Custom angle
-- [x] Snap to location
+- Pan, zoom, and rotation
+- Automatically follows whatever you mark as 'ground'
+- Smoothed movement
+- Customisable controls and other settings
 
 ## Controls
 
-[//]: # (TODO)
+Default controls:
+
+- Arrow Keys: pan
+- Mouse Wheel: zoom
+- Middle Mouse: rotate
+
+You can also 'edge pan' by moving the mouse to the edge of the screen.
 
 ## Quick Start
-
-[//]: # (TODO)
 
 Add the plugin:
 
 ```rust ignore
-.add_plugins(PanOrbitCameraPlugin)
+.add_plugins(RtsCameraPlugin)
 ```
 
-Add `PanOrbitCamera` to a camera:
+Add `RtsCamera` to a camera:
 
 ```rust ignore
 commands.spawn((
@@ -52,7 +46,7 @@ commands.spawn((
         transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
         ..default()
     },
-    PanOrbitCamera::default(),
+    RtsCamera::default(),
 ));
 ```
 
