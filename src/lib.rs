@@ -8,6 +8,8 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
 
+const BASE_SPEED: f32 = 5.0;
+
 /// Bevy plugin that provides RTS camera controls.
 /// # Example
 /// ```no_run
@@ -235,10 +237,12 @@ fn zoom(
     target_zoom.0 = new_zoom;
 }
 
+#[allow(clippy::too_many_arguments)]
 fn pan(
     config: Res<CameraConfig>,
     controls: Res<CameraControls>,
     mut target_tfm: ResMut<CameraTargetTransform>,
+    target_zoom: Res<CameraTargetZoom>,
     button_input: Res<ButtonInput<KeyCode>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
@@ -292,7 +296,12 @@ fn pan(
     }
 
     let new_target = target_tfm.0.translation
-        + delta.normalize_or_zero() * time.delta_seconds() * 2.0 * config.pan_speed;
+        + delta.normalize_or_zero()
+            * time.delta_seconds()
+            * BASE_SPEED
+            * config.pan_speed
+            // Scale based on zoom so it (roughly) feels the same speed at different zoom levels
+            * target_zoom.0.remap(0.0, 1.0, 1.0, 0.5);
     target_tfm.0.translation = new_target;
 }
 
