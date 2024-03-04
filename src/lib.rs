@@ -115,7 +115,7 @@ pub struct CameraConfig {
     /// The amount of smoothing applied to the camera movement. Should be a value between `0.0` and
     /// `1.0`. Set to `0.0` to disable smoothing. `1.0` is infinite smoothing (the camera won't
     /// move).
-    /// Defaults to `0.9`.
+    /// Defaults to `0.3`.
     pub smoothness: f32,
     /// Whether RTS camera controls are enabled. When disabled, all input will be ignored. However,
     /// you can still control the camera manually, and movement will still be smoothed.
