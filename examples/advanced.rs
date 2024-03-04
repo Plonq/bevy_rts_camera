@@ -164,10 +164,14 @@ fn lock_or_jump(
         let new_tfm = target_tfm.0.with_translation(cube.translation);
         if key_input.pressed(KeyCode::KeyL) {
             commands.insert_resource(CameraTargetTransform(new_tfm));
+            commands.insert_resource(CameraTargetZoom(0.4));
             commands.insert_resource(CameraSnapTo(true));
         }
         if key_input.just_pressed(KeyCode::KeyK) {
-            commands.insert_resource(CameraTargetTransform(new_tfm))
+            commands.insert_resource(CameraTargetTransform(new_tfm));
+            // Zoom won't be 'locked' (it will still be smoothed), because zooming while locking
+            // the position is possible
+            commands.insert_resource(CameraTargetZoom(0.4));
         }
     }
 }
