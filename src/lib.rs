@@ -127,10 +127,10 @@ impl Default for CameraConfig {
     fn default() -> Self {
         CameraConfig {
             edge_pan_width: 0.05,
-            pan_speed: 1.0,
-            height_min: 0.1,
-            height_max: 5.0,
-            angle: 25.0f32.to_radians(),
+            pan_speed: 15.0,
+            height_min: 2.0,
+            height_max: 30.0,
+            angle: 20.0f32.to_radians(),
             smoothness: 0.3,
             enabled: true,
         }
@@ -297,7 +297,7 @@ fn pan(
     let new_target = target_tfm.0.translation
         + delta.normalize_or_zero()
             * time.delta_seconds()
-            * BASE_SPEED
+            // * BASE_SPEED
             * config.pan_speed
             // Scale based on zoom so it (roughly) feels the same speed at different zoom levels
             * target_zoom.0.remap(0.0, 1.0, 1.0, 0.5);
