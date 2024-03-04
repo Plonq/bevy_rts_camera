@@ -35,14 +35,12 @@ impl Plugin for RtsCameraPlugin {
                 Update,
                 (
                     (
-                        (
-                            zoom,
-                            pan.run_if(resource_equals(CameraSnapTo(false))),
-                            rotate,
-                        ),
-                        follow_ground,
-                    )
-                        .chain(),
+                        initialize,
+                        zoom,
+                        pan.run_if(resource_equals(CameraSnapTo(false))),
+                        rotate,
+                    ),
+                    follow_ground,
                     snap_to_target.run_if(resource_equals(CameraSnapTo(true))),
                     move_towards_target,
                     update_camera_transform,
@@ -147,7 +145,7 @@ pub struct CameraSnapTo(pub bool);
 
 impl Default for CameraSnapTo {
     fn default() -> Self {
-        CameraSnapTo(true)
+        CameraSnapTo(false)
     }
 }
 
@@ -205,6 +203,23 @@ pub struct RtsCamera;
 /// You'll likely want to mark all terrain meshes, but not things like buildings, trees, or units.
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
+
+fn initialize(
+    config: Res<CameraConfig>,
+    mut zoom: ResMut<CameraActualZoom>,
+    target_zoom: Res<CameraTargetZoom>,
+    mut tfm: ResMut<CameraActualTransform>,
+    mut target_tfm: ResMut<CameraTargetTransform>,
+    cam_added_q: Query<Entity, Added<RtsCamera>>,
+) {
+    // Snap to targets when RtsCamera is added. Note that we snap whole transform, not just XZ
+    // translation like snap_to system.
+    if !cam_added_q.is_empty() {
+        zoom.0 = target_zoom.0;
+        target_tfm.0.translation.y = config.height_max.lerp(config.height_min, zoom.0);
+        tfm.0 = target_tfm.0;
+    }
+}
 
 fn zoom(
     config: Res<CameraConfig>,
@@ -290,7 +305,7 @@ fn pan(
 fn follow_ground(
     config: Res<CameraConfig>,
     mut target_tfm: ResMut<CameraTargetTransform>,
-    target_zoom: ResMut<CameraTargetZoom>,
+    target_zoom: Res<CameraTargetZoom>,
     ground_q: Query<Entity, With<Ground>>,
     mut raycast: Raycast,
 ) {

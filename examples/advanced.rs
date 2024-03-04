@@ -6,20 +6,24 @@ use std::f32::consts::TAU;
 use bevy::prelude::*;
 
 use bevy_rts_camera::{
-    CameraConfig, CameraControls, CameraSnapTo, CameraTargetTransform, Ground, RtsCamera,
-    RtsCameraPlugin, RtsCameraSystemSet,
+    CameraConfig, CameraControls, CameraSnapTo, CameraTargetTransform, CameraTargetZoom, Ground,
+    RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
 };
 
 fn main() {
     App::new()
+        // Set starting position of the camera (note Y is ignored because it's controlled by zoom)
+        .insert_resource(CameraTargetTransform(Transform::from_xyz(3.0, 20.0, 1.0)))
+        // Set starting zoom to 50%
+        .insert_resource(CameraTargetZoom(0.5))
         .insert_resource(CameraConfig {
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
             edge_pan_width: 0.1,
             // 150% pan speed
             pan_speed: 1.5,
-            // Increase min height (or decrease max zoom)
+            // Increase min height (decrease max zoom)
             height_min: 1.5,
-            // Increase max height (or decrease min zoom)
+            // Increase max height (decrease min zoom)
             height_max: 20.0,
             // Change the angle of the camera to 10 degrees (0 is looking straight down)
             angle: 10.0f32.to_radians(),
