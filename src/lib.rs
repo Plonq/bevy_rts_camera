@@ -140,14 +140,8 @@ impl Default for CameraConfig {
 /// This is useful for locking onto targets (e.g. to follow a certain unit). It also starts out
 /// true so that the camera initializes cleanly instead of moving smoothly from world origin to its
 /// starting location.
-#[derive(Resource, Debug, PartialEq, Clone)]
+#[derive(Resource, Default, Debug, PartialEq, Clone)]
 pub struct CameraSnapTo(pub bool);
-
-impl Default for CameraSnapTo {
-    fn default() -> Self {
-        CameraSnapTo(false)
-    }
-}
 
 /// The target position and rotation of the camera.
 /// You can use this to 'jump' to a specific location or rotation.
