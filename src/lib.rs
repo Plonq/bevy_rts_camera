@@ -63,16 +63,16 @@ pub struct RtsCameraSystemSet;
 #[derive(Resource, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct CameraControls {
     /// The key that will pan the camera up (or forward).
-    /// Defaults to `KeyCode::KeyW`.
+    /// Defaults to `KeyCode::ArrowUp`.
     pub key_up: KeyCode,
     /// The key that will pan the camera down (or backward).
-    /// Defaults to `KeyCode::KeyS`.
+    /// Defaults to `KeyCode::ArrowDown`.
     pub key_down: KeyCode,
     /// The key that will pan the camera left.
-    /// Defaults to `KeyCode::KeyA`.
+    /// Defaults to `KeyCode::ArrowLeft`.
     pub key_left: KeyCode,
     /// The key that will pan the camera right.
-    /// Defaults to `KeyCode::KeyD`.
+    /// Defaults to `KeyCode::ArrowRight`.
     pub key_right: KeyCode,
     /// The mouse button used to rotate the camera.
     /// Defaults to `MouseButton::Middle`.
