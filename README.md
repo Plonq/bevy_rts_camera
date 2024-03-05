@@ -47,8 +47,20 @@ commands.spawn((
 ));
 ```
 
-This will set up a camera at world origin with good defaults based on a roughly realistic scale (where a human is 1.75
-units tall).
+Add `Ground` to your ground/terrain entities:
+
+```rust ignore
+commands.spawn((
+    PbrBundle {
+        mesh: meshes.add(Plane3d::default().mesh().size(80.0, 80.0)),
+        ..default()
+    },
+    Ground,
+));
+```
+
+This will set up a camera at world origin with good defaults based on a roughly realistic scale (where an average human
+is 1.75 units tall).
 
 Check out the [advanced example](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples/advanced.rs) to see
 all the possible configuration options.
