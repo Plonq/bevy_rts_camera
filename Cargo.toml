@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Plonq/bevy_rts_camera"
 homepage = "https://github.com/Plonq/bevy_rts_camera"
 readme = "README.md"
+exclude = ["assets/"]
 
 [dependencies]
 bevy = { version = "0.13", default-features = false, features = ["bevy_render"] }

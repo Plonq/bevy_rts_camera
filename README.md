@@ -6,7 +6,7 @@
   <h1>Bevy RTS Camera</h1>
 </div>
 
-[//]: # (![A screen recording showing camera movement]&#40;https://user-images.githubusercontent.com/7709415/230715348-eb19d9a8-4826-4a73-a039-02cacdcb3dc9.gif "Demo of bevy_rts_camera"&#41;)
+![A screen recording showing camera movement](assets/demo.gif "Demo of bevy_rts_camera")
 
 ## Summary
 
