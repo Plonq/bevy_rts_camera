@@ -29,8 +29,6 @@ fn main() {
             angle: 10.0f32.to_radians(),
             // Decrease smoothing
             smoothness: 0.1,
-            // Keep it enabled (wouldn't be much of a demo if this is false)
-            enabled: true,
         })
         .insert_resource(CameraControls {
             // Change pan controls to WASD
@@ -40,13 +38,17 @@ fn main() {
             key_right: KeyCode::KeyD,
             // Change rotate to right click
             button_rotate: MouseButton::Right,
+            // Keep it enabled (wouldn't be much of a demo if we set this to false)
+            enabled: true,
         })
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
         .add_systems(Startup, setup)
         .add_systems(
             Update,
-            (move_unit, lock_or_jump).chain().before(RtsCameraSystemSet),
+            (move_unit, (lock_or_jump, toggle_controls))
+                .chain()
+                .before(RtsCameraSystemSet),
         )
         .run();
 }
@@ -108,9 +110,9 @@ fn setup(
     // A moving unit that can be locked onto
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Capsule3d::new(0.1, 0.3)),
+            mesh: meshes.add(Capsule3d::new(0.25, 1.25)),
             material: terrain_material.clone(),
-            transform: Transform::from_xyz(0.0, 0.25, 0.0),
+            transform: Transform::from_xyz(0.0, 0.75, 0.0),
             ..default()
         })
         .insert(Move);
@@ -133,7 +135,10 @@ fn setup(
     commands.spawn(TextBundle {
         text: Text {
             sections: vec![TextSection {
-                value: "Press K to jump to the moving unit\nHold L to lock onto the moving unit"
+                value: "\
+Press K to jump to the moving unit
+Hold L to lock onto the moving unit
+Press T to toggle controls (K and L will still work)"
                     .to_string(),
                 ..Default::default()
             }],
@@ -155,7 +160,7 @@ fn move_unit(
         // Rotate 20 degrees a second, wrapping around to 0 after a full rotation
         *angle += 20f32.to_radians() * time.delta_seconds() % TAU;
         // Convert angle to position
-        let pos = Vec3::new(angle.sin() * 1.5, 0.25, angle.cos() * 1.5);
+        let pos = Vec3::new(angle.sin() * 7.5, 0.75, angle.cos() * 7.5);
         cube_tfm.translation = pos;
     }
 }
@@ -171,7 +176,6 @@ fn lock_or_jump(
         let new_tfm = target_tfm.0.with_translation(cube.translation);
         if key_input.pressed(KeyCode::KeyL) {
             commands.insert_resource(CameraTargetTransform(new_tfm));
-            commands.insert_resource(CameraTargetZoom(0.4));
             commands.insert_resource(CameraSnapTo(true));
         }
         if key_input.just_pressed(KeyCode::KeyK) {
@@ -180,5 +184,14 @@ fn lock_or_jump(
             // the position is possible
             commands.insert_resource(CameraTargetZoom(0.4));
         }
+    }
+}
+
+fn toggle_controls(
+    mut camera_controls: ResMut<CameraControls>,
+    key_input: Res<ButtonInput<KeyCode>>,
+) {
+    if key_input.just_pressed(KeyCode::KeyT) {
+        camera_controls.enabled = !camera_controls.enabled;
     }
 }

@@ -75,6 +75,10 @@ pub struct CameraControls {
     /// The mouse button used to rotate the camera.
     /// Defaults to `MouseButton::Middle`.
     pub button_rotate: MouseButton,
+    /// Whether controls are enabled. When disabled, all input will be ignored. However,
+    /// you can still control the camera manually, and movement will still be smoothed.
+    /// Defaults to `true`.
+    pub enabled: bool,
 }
 
 impl Default for CameraControls {
@@ -85,6 +89,7 @@ impl Default for CameraControls {
             key_left: KeyCode::ArrowLeft,
             key_right: KeyCode::ArrowRight,
             button_rotate: MouseButton::Middle,
+            enabled: true,
         }
     }
 }
@@ -115,10 +120,6 @@ pub struct CameraConfig {
     /// move).
     /// Defaults to `0.3`.
     pub smoothness: f32,
-    /// Whether RTS camera controls are enabled. When disabled, all input will be ignored. However,
-    /// you can still control the camera manually, and movement will still be smoothed.
-    /// Defaults to `true`.
-    pub enabled: bool,
 }
 
 impl Default for CameraConfig {
@@ -130,7 +131,6 @@ impl Default for CameraConfig {
             height_max: 30.0,
             angle: 20.0f32.to_radians(),
             smoothness: 0.3,
-            enabled: true,
         }
     }
 }
@@ -215,11 +215,11 @@ fn initialize(
 }
 
 fn zoom(
-    config: Res<CameraConfig>,
+    controls: Res<CameraControls>,
     mut target_zoom: ResMut<CameraTargetZoom>,
     mut mouse_wheel: EventReader<MouseWheel>,
 ) {
-    if !config.enabled {
+    if !controls.enabled {
         return;
     }
 
@@ -245,7 +245,7 @@ fn pan(
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
 ) {
-    if !config.enabled {
+    if !controls.enabled {
         return;
     }
 
@@ -301,39 +301,14 @@ fn pan(
     target_tfm.0.translation = new_target;
 }
 
-fn follow_ground(
-    config: Res<CameraConfig>,
-    mut target_tfm: ResMut<CameraTargetTransform>,
-    target_zoom: Res<CameraTargetZoom>,
-    ground_q: Query<Entity, With<Ground>>,
-    mut raycast: Raycast,
-) {
-    if !config.enabled {
-        return;
-    }
-
-    let ray_start = Vec3::new(
-        target_tfm.0.translation.x,
-        target_tfm.0.translation.y + config.height_max,
-        target_tfm.0.translation.z,
-    );
-    if let Some(hit1) = cast_ray(&mut raycast, ray_start, Direction3d::NEG_Y, &|entity| {
-        ground_q.get(entity).is_ok()
-    }) {
-        target_tfm.0.translation.y =
-            hit1.position().y + config.height_max.lerp(config.height_min, target_zoom.0);
-    }
-}
-
 fn rotate(
     mut target_tfm: ResMut<CameraTargetTransform>,
-    config: Res<CameraConfig>,
     controls: Res<CameraControls>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion: EventReader<MouseMotion>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
 ) {
-    if !config.enabled {
+    if !controls.enabled {
         return;
     }
 
@@ -345,6 +320,26 @@ fn rotate(
             let delta_x = mouse_delta.x / primary_window.width() * PI;
             target_tfm.0.rotate_local_y(-delta_x);
         }
+    }
+}
+
+fn follow_ground(
+    config: Res<CameraConfig>,
+    mut target_tfm: ResMut<CameraTargetTransform>,
+    target_zoom: Res<CameraTargetZoom>,
+    ground_q: Query<Entity, With<Ground>>,
+    mut raycast: Raycast,
+) {
+    let ray_start = Vec3::new(
+        target_tfm.0.translation.x,
+        target_tfm.0.translation.y + config.height_max,
+        target_tfm.0.translation.z,
+    );
+    if let Some(hit1) = cast_ray(&mut raycast, ray_start, Direction3d::NEG_Y, &|entity| {
+        ground_q.get(entity).is_ok()
+    }) {
+        target_tfm.0.translation.y =
+            hit1.position().y + config.height_max.lerp(config.height_min, target_zoom.0);
     }
 }
 
