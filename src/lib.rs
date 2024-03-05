@@ -192,8 +192,9 @@ struct CameraActualZoom(f32);
 pub struct RtsCamera;
 
 /// Marks an entity that should be treated as 'ground'. The RTS camera will stay a certain distance
-/// (based on min/max height and zoom) above any meshes marked with this component.
-/// You'll likely want to mark all terrain meshes, but not things like buildings, trees, or units.
+/// (based on min/max height and zoom) above any meshes marked with this component (using a ray
+/// cast).
+/// You'll likely want to mark all terrain entities, but not things like buildings, trees, or units.
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct Ground;
 
