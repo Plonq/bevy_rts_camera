@@ -5,9 +5,10 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
+use bevy_rts_camera::controller::RtsCameraController;
 use bevy_rts_camera::{
-    CameraConfig, CameraControls, CameraSnapTo, CameraTargetTransform, CameraTargetZoom, Ground,
-    RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
+    CameraConfig, CameraSnapTo, CameraTargetTransform, CameraTargetZoom, Ground, RtsCamera,
+    RtsCameraPlugin, RtsCameraSystemSet,
 };
 
 fn main() {
@@ -30,7 +31,7 @@ fn main() {
             // Decrease smoothing
             smoothness: 0.1,
         })
-        .insert_resource(CameraControls {
+        .insert_resource(RtsCameraController {
             // Change pan controls to WASD
             key_up: KeyCode::KeyW,
             key_down: KeyCode::KeyS,
@@ -151,7 +152,7 @@ Press T to toggle controls (K and L will still work)"
         ..default()
     });
     // Camera
-    commands.spawn((Camera3dBundle::default(), RtsCamera));
+    commands.spawn((Camera3dBundle::default(), RtsCamera::default()));
 }
 
 // Move a unit in a circle
@@ -192,7 +193,7 @@ fn lock_or_jump(
 }
 
 fn toggle_controls(
-    mut camera_controls: ResMut<CameraControls>,
+    mut camera_controls: ResMut<RtsCameraController>,
     key_input: Res<ButtonInput<KeyCode>>,
 ) {
     if key_input.just_pressed(KeyCode::KeyT) {

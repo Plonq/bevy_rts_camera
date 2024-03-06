@@ -1,12 +1,12 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
-use std::f32::consts::PI;
-
-use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
 use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
+
+mod controller;
+use crate::controller::RtsCameraControllerPlugin;
+pub use controller::RtsCameraController;
 
 /// Bevy plugin that provides RTS camera controls.
 /// # Example
@@ -24,18 +24,19 @@ pub struct RtsCameraPlugin;
 
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<CameraControls>().add_systems(
-            Update,
-            (
-                (initialize, zoom, pan, rotate),
-                follow_ground,
-                snap_to_target,
-                move_towards_target,
-                update_camera_transform,
-            )
-                .chain()
-                .in_set(RtsCameraSystemSet),
-        );
+        app.add_plugins(RtsCameraControllerPlugin)
+            .add_systems(PreUpdate, initialize)
+            .add_systems(
+                Update,
+                (
+                    follow_ground,
+                    snap_to_target,
+                    move_towards_target,
+                    update_camera_transform,
+                )
+                    .chain()
+                    .in_set(RtsCameraSystemSet),
+            );
     }
 }
 
@@ -44,43 +45,6 @@ impl Plugin for RtsCameraPlugin {
 /// you should run that before this system set.
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct RtsCameraSystemSet;
-
-/// RTS camera controls
-#[derive(Resource, Debug, Hash, PartialEq, Eq, Clone)]
-pub struct CameraControls {
-    /// The key that will pan the camera up (or forward).
-    /// Defaults to `KeyCode::ArrowUp`.
-    pub key_up: KeyCode,
-    /// The key that will pan the camera down (or backward).
-    /// Defaults to `KeyCode::ArrowDown`.
-    pub key_down: KeyCode,
-    /// The key that will pan the camera left.
-    /// Defaults to `KeyCode::ArrowLeft`.
-    pub key_left: KeyCode,
-    /// The key that will pan the camera right.
-    /// Defaults to `KeyCode::ArrowRight`.
-    pub key_right: KeyCode,
-    /// The mouse button used to rotate the camera.
-    /// Defaults to `MouseButton::Middle`.
-    pub button_rotate: MouseButton,
-    /// Whether controls are enabled. When disabled, all input will be ignored. However,
-    /// you can still control the camera manually, and movement will still be smoothed.
-    /// Defaults to `true`.
-    pub enabled: bool,
-}
-
-impl Default for CameraControls {
-    fn default() -> Self {
-        CameraControls {
-            key_up: KeyCode::ArrowUp,
-            key_down: KeyCode::ArrowDown,
-            key_left: KeyCode::ArrowLeft,
-            key_right: KeyCode::ArrowRight,
-            button_rotate: MouseButton::Middle,
-            enabled: true,
-        }
-    }
-}
 
 /// Marks a camera to be used as an RTS camera.
 /// Only one instance of this component should exist at any given moment.
@@ -169,119 +133,6 @@ fn initialize(mut cam_q: Query<&mut RtsCamera, Added<RtsCamera>>) {
         cam.zoom = cam.target_zoom;
         cam.target_transform.translation.y = cam.height_max.lerp(cam.height_min, cam.zoom);
         cam.transform = cam.target_transform;
-    }
-}
-
-fn zoom(
-    controls: Res<CameraControls>,
-    mut mouse_wheel: EventReader<MouseWheel>,
-    mut cam_q: Query<&mut RtsCamera>,
-) {
-    if !controls.enabled {
-        return;
-    }
-
-    for mut cam in cam_q.iter_mut() {
-        let zoom_amount = mouse_wheel
-            .read()
-            .map(|event| match event.unit {
-                MouseScrollUnit::Line => event.y,
-                MouseScrollUnit::Pixel => event.y * 0.001,
-            })
-            .fold(0.0, |acc, val| acc + val);
-        let new_zoom = (cam.target_zoom + zoom_amount * 0.5).clamp(0.0, 1.0);
-        cam.target_zoom = new_zoom;
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn pan(
-    controls: Res<CameraControls>,
-    mut cam_q: Query<&mut RtsCamera>,
-    button_input: Res<ButtonInput<KeyCode>>,
-    mouse_input: Res<ButtonInput<MouseButton>>,
-    primary_window_q: Query<&Window, With<PrimaryWindow>>,
-    time: Res<Time>,
-) {
-    if !controls.enabled {
-        return;
-    }
-
-    for mut cam in cam_q.iter_mut() {
-        let mut delta = Vec3::ZERO;
-
-        // Keyboard pan
-        if button_input.pressed(controls.key_up) {
-            delta += Vec3::from(cam.target_transform.forward())
-        }
-        if button_input.pressed(controls.key_down) {
-            delta += Vec3::from(cam.target_transform.back())
-        }
-        if button_input.pressed(controls.key_left) {
-            delta += Vec3::from(cam.target_transform.left())
-        }
-        if button_input.pressed(controls.key_right) {
-            delta += Vec3::from(cam.target_transform.right())
-        }
-
-        // Edge pan
-        if delta.length_squared() == 0.0 && !mouse_input.pressed(controls.button_rotate) {
-            if let Ok(primary_window) = primary_window_q.get_single() {
-                if let Some(cursor_position) = primary_window.cursor_position() {
-                    let win_w = primary_window.width();
-                    let win_h = primary_window.height();
-                    let pan_width = win_h * cam.edge_pan_width;
-                    // Pan left
-                    if cursor_position.x < pan_width {
-                        delta += Vec3::from(cam.target_transform.left())
-                    }
-                    // Pan right
-                    if cursor_position.x > win_w - pan_width {
-                        delta += Vec3::from(cam.target_transform.right())
-                    }
-                    // Pan up
-                    if cursor_position.y < pan_width {
-                        delta += Vec3::from(cam.target_transform.forward())
-                    }
-                    // Pan down
-                    if cursor_position.y > win_h - pan_width {
-                        delta += Vec3::from(cam.target_transform.back())
-                    }
-                }
-            }
-        }
-
-        let new_target = cam.target_transform.translation
-            + delta.normalize_or_zero()
-            * time.delta_seconds()
-            * cam.pan_speed
-            // Scale based on zoom so it (roughly) feels the same speed at different zoom levels
-            * cam.target_zoom.remap(0.0, 1.0, 1.0, 0.5);
-        cam.target_transform.translation = new_target;
-    }
-}
-
-fn rotate(
-    mut cam_q: Query<&mut RtsCamera>,
-    controls: Res<CameraControls>,
-    mouse_input: Res<ButtonInput<MouseButton>>,
-    mut mouse_motion: EventReader<MouseMotion>,
-    primary_window_q: Query<&Window, With<PrimaryWindow>>,
-) {
-    if !controls.enabled {
-        return;
-    }
-
-    for mut cam in cam_q.iter_mut() {
-        if mouse_input.pressed(controls.button_rotate) {
-            let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
-            if let Ok(primary_window) = primary_window_q.get_single() {
-                // Adjust based on window size, so that moving mouse entire width of window
-                // will be one half rotation (180 degrees)
-                let delta_x = mouse_delta.x / primary_window.width() * PI;
-                cam.target_transform.rotate_local_y(-delta_x);
-            }
-        }
     }
 }
 
