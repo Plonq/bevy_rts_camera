@@ -84,5 +84,5 @@ fn setup(
         ..default()
     });
     // Camera
-    commands.spawn((Camera3dBundle::default(), RtsCamera));
+    commands.spawn((Camera3dBundle::default(), RtsCamera::default()));
 }
