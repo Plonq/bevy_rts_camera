@@ -32,6 +32,9 @@ pub struct RtsCameraController {
     /// The mouse button used to rotate the camera.
     /// Defaults to `MouseButton::Middle`.
     pub button_rotate: MouseButton,
+    /// Whether these controls are enabled.
+    /// Defaults to `true`.
+    pub enabled: bool,
 }
 
 impl Default for RtsCameraController {
@@ -42,6 +45,7 @@ impl Default for RtsCameraController {
             key_left: KeyCode::ArrowLeft,
             key_right: KeyCode::ArrowRight,
             button_rotate: MouseButton::Middle,
+            enabled: true,
         }
     }
 }
@@ -49,9 +53,9 @@ impl Default for RtsCameraController {
 pub fn zoom(
     mut mouse_wheel: EventReader<MouseWheel>,
     // Only query if controller is present
-    mut cam_q: Query<&mut RtsCamera, With<RtsCameraController>>,
+    mut cam_q: Query<(&mut RtsCamera, &RtsCameraController)>,
 ) {
-    for mut cam in cam_q.iter_mut() {
+    for (mut cam, _) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
         let zoom_amount = mouse_wheel
             .read()
             .map(|event| match event.unit {
@@ -71,7 +75,7 @@ pub fn pan(
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time>,
 ) {
-    for (mut cam, controller) in cam_q.iter_mut() {
+    for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
         let mut delta = Vec3::ZERO;
 
         // Keyboard pan
@@ -131,7 +135,7 @@ pub fn rotate(
     mut mouse_motion: EventReader<MouseMotion>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (mut cam, controller) in cam_q.iter_mut() {
+    for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
         if mouse_input.pressed(controller.button_rotate) {
             let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
             if let Ok(primary_window) = primary_window_q.get_single() {

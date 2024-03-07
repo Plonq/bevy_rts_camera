@@ -98,7 +98,7 @@ pub struct RtsCamera {
     pub target_transform: Transform,
     pub zoom: f32,
     pub target_zoom: f32,
-    pub snap_next_frame: bool,
+    pub snap: bool,
 }
 
 impl Default for RtsCamera {
@@ -114,7 +114,7 @@ impl Default for RtsCamera {
             target_transform: Transform::IDENTITY,
             zoom: 0.0,
             target_zoom: 0.0,
-            snap_next_frame: true,
+            snap: true,
         }
     }
 }
@@ -160,10 +160,10 @@ fn snap_to_target(mut cam_q: Query<&mut RtsCamera>) {
     // When snapping in a top down camera, only the XZ should be snapped. The Y coord is controlled
     // by zoom and that should remain smoothed, as should rotation.
     for mut cam in cam_q.iter_mut() {
-        if cam.snap_next_frame {
+        if cam.snap {
             cam.transform.translation.x = cam.target_transform.translation.x;
             cam.transform.translation.z = cam.target_transform.translation.z;
-            cam.snap_next_frame = false;
+            cam.snap = false;
         }
     }
 }
