@@ -71,13 +71,6 @@ pub struct RtsCameraSystemSet;
 /// ```
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct RtsCamera {
-    /// How far away from the side of the screen edge pan will kick in, defined as a percentage
-    /// of the window's height. Set to `0.0` to disable edge panning.
-    /// Defaults to `0.05` (5%).
-    pub edge_pan_width: f32,
-    /// Speed of camera pan (either via keyboard controls or edge panning).
-    /// Defaults to `1.0`.
-    pub pan_speed: f32,
     /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.
     /// Should be set to a value that avoids clipping.
     /// Defaults to `0.5`.
@@ -128,8 +121,6 @@ pub struct RtsCamera {
 impl Default for RtsCamera {
     fn default() -> Self {
         RtsCamera {
-            edge_pan_width: 0.05,
-            pan_speed: 15.0,
             height_min: 2.0,
             height_max: 30.0,
             angle: 20.0f32.to_radians(),

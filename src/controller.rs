@@ -35,7 +35,7 @@ impl Plugin for RtsCameraControllerPlugin {
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Component, Debug, PartialEq, Clone)]
 pub struct RtsCameraController {
     /// The key that will pan the camera up (or forward).
     /// Defaults to `KeyCode::ArrowUp`.
@@ -52,6 +52,13 @@ pub struct RtsCameraController {
     /// The mouse button used to rotate the camera.
     /// Defaults to `MouseButton::Middle`.
     pub button_rotate: MouseButton,
+    /// How far away from the side of the screen edge pan will kick in, defined as a percentage
+    /// of the window's height. Set to `0.0` to disable edge panning.
+    /// Defaults to `0.05` (5%).
+    pub edge_pan_width: f32,
+    /// Speed of camera pan (either via keyboard controls or edge panning).
+    /// Defaults to `1.0`.
+    pub pan_speed: f32,
     /// Whether these controls are enabled.
     /// Defaults to `true`.
     pub enabled: bool,
@@ -65,6 +72,8 @@ impl Default for RtsCameraController {
             key_left: KeyCode::ArrowLeft,
             key_right: KeyCode::ArrowRight,
             button_rotate: MouseButton::Middle,
+            edge_pan_width: 0.05,
+            pan_speed: 15.0,
             enabled: true,
         }
     }
@@ -117,7 +126,7 @@ pub fn pan(
                 if let Some(cursor_position) = primary_window.cursor_position() {
                     let win_w = primary_window.width();
                     let win_h = primary_window.height();
-                    let pan_width = win_h * cam.edge_pan_width;
+                    let pan_width = win_h * controller.edge_pan_width;
                     // Pan left
                     if cursor_position.x < pan_width {
                         delta += Vec3::from(cam.target_focus.left())
@@ -141,7 +150,7 @@ pub fn pan(
         let new_target = cam.target_focus.translation
             + delta.normalize_or_zero()
             * time.delta_seconds()
-            * cam.pan_speed
+            * controller.pan_speed
             // Scale based on zoom so it (roughly) feels the same speed at different zoom levels
             * cam.target_zoom.remap(0.0, 1.0, 1.0, 0.5);
         cam.target_focus.translation = new_target;
