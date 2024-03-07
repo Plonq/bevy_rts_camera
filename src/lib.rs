@@ -93,11 +93,34 @@ pub struct RtsCamera {
     /// move).
     /// Defaults to `0.3`.
     pub smoothness: f32,
-
-    pub transform: Transform,
-    pub target_transform: Transform,
+    /// The current focus of the camera, including the orientation (which way is forward). The
+    /// camera's actual transform is calculated based on this transform.
+    /// Updated automatically.
+    /// Typically you won't need to set this manually, even if you implement your own controls.
+    /// Set `target_focus` instead.
+    /// Defaults to `Transform::IDENTITY`.
+    pub focus: Transform,
+    /// The target focus of the camera, including the target orientation (which way is forward).
+    /// This is where the camera should move to, and is how smoothing is implemented
+    /// Updated automatically when using `RtsCameraController`, but should be updated manually
+    /// if you implement your own controls. You can also change this when adding this component to
+    /// set the starting position.
+    pub target_focus: Transform,
+    /// The current zoom level, between `0.0` and `1.0`, where 0 is no zoom (`height_max`), and 1 is
+    /// max zoom (`height_min`).
+    /// Typically you won't need to set this manually, even if you implement your own controls.
+    /// Set `target_zoom` instead.
+    /// Defaults to `0.0`.
     pub zoom: f32,
+    /// The target zoom level. Used to implement zoom smoothing.
+    /// Updated automatically when using `RtsCameraController`, but should be updated manually
+    /// if you implement your own controls. You can also change this when adding this component to
+    /// set the starting zoom.
     pub target_zoom: f32,
+    /// Whether the camera should snap to `target_focus` and `target_zoom`. Will be set to
+    /// `false` after one frame. Useful if you want to lock the camera to a specific target (e.g.
+    /// to follow a unit), by setting `target_focus` and setting this to `true` on every frame.
+    /// Defaults to `false`.
     pub snap: bool,
 }
 
@@ -110,11 +133,11 @@ impl Default for RtsCamera {
             height_max: 30.0,
             angle: 20.0f32.to_radians(),
             smoothness: 0.3,
-            transform: Transform::IDENTITY,
-            target_transform: Transform::IDENTITY,
+            focus: Transform::IDENTITY,
+            target_focus: Transform::IDENTITY,
             zoom: 0.0,
             target_zoom: 0.0,
-            snap: true,
+            snap: false,
         }
     }
 }
@@ -131,8 +154,8 @@ fn initialize(mut cam_q: Query<&mut RtsCamera, Added<RtsCamera>>) {
         // Snap to targets when RtsCamera is added. Note that we snap whole transform, not just XZ
         // translation like snap_to system.
         cam.zoom = cam.target_zoom;
-        cam.target_transform.translation.y = cam.height_max.lerp(cam.height_min, cam.zoom);
-        cam.transform = cam.target_transform;
+        cam.target_focus.translation.y = cam.height_max.lerp(cam.height_min, cam.zoom);
+        cam.focus = cam.target_focus;
     }
 }
 
@@ -143,14 +166,14 @@ fn follow_ground(
 ) {
     for mut cam in cam_q.iter_mut() {
         let ray_start = Vec3::new(
-            cam.target_transform.translation.x,
-            cam.target_transform.translation.y + cam.height_max,
-            cam.target_transform.translation.z,
+            cam.target_focus.translation.x,
+            cam.target_focus.translation.y + cam.height_max,
+            cam.target_focus.translation.z,
         );
         if let Some(hit1) = cast_ray(&mut raycast, ray_start, Direction3d::NEG_Y, &|entity| {
             ground_q.get(entity).is_ok()
         }) {
-            cam.target_transform.translation.y =
+            cam.target_focus.translation.y =
                 hit1.position().y + cam.height_max.lerp(cam.height_min, cam.target_zoom);
         }
     }
@@ -161,8 +184,8 @@ fn snap_to_target(mut cam_q: Query<&mut RtsCamera>) {
     // by zoom and that should remain smoothed, as should rotation.
     for mut cam in cam_q.iter_mut() {
         if cam.snap {
-            cam.transform.translation.x = cam.target_transform.translation.x;
-            cam.transform.translation.z = cam.target_transform.translation.z;
+            cam.focus.translation.x = cam.target_focus.translation.x;
+            cam.focus.translation.z = cam.target_focus.translation.z;
             cam.snap = false;
         }
     }
@@ -170,12 +193,12 @@ fn snap_to_target(mut cam_q: Query<&mut RtsCamera>) {
 
 fn move_towards_target(mut cam_q: Query<&mut RtsCamera>, time: Res<Time>) {
     for mut cam in cam_q.iter_mut() {
-        cam.transform.translation = cam.transform.translation.lerp(
-            cam.target_transform.translation,
+        cam.focus.translation = cam.focus.translation.lerp(
+            cam.target_focus.translation,
             1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
         );
-        cam.transform.rotation = cam.transform.rotation.lerp(
-            cam.target_transform.rotation,
+        cam.focus.rotation = cam.focus.rotation.lerp(
+            cam.target_focus.rotation,
             1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
         );
         cam.zoom = cam.zoom.lerp(
@@ -189,8 +212,8 @@ fn update_camera_transform(mut cam_q: Query<(&mut Transform, &RtsCamera)>) {
     for (mut tfm, cam) in cam_q.iter_mut() {
         let rotation = Quat::from_rotation_x(cam.angle - 90f32.to_radians());
         let camera_offset = (cam.height_max.lerp(cam.height_min, cam.zoom)) * cam.angle.tan();
-        tfm.rotation = cam.transform.rotation * rotation;
-        tfm.translation = cam.transform.translation + cam.transform.back() * camera_offset;
+        tfm.rotation = cam.focus.rotation * rotation;
+        tfm.translation = cam.focus.translation + cam.focus.back() * camera_offset;
     }
 }
 

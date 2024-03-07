@@ -137,7 +137,7 @@ Press T to toggle controls (K and L will still work)"
             // Decrease smoothing
             smoothness: 0.1,
             // Change starting position
-            target_transform: Transform::from_xyz(3.0, 0.0, -3.0),
+            target_focus: Transform::from_xyz(3.0, 0.0, -3.0),
             // Change starting zoom level
             target_zoom: 0.2,
             ..default()
@@ -179,11 +179,11 @@ fn lock_or_jump(
     for cube in cube_q.iter() {
         for mut cam in cam_q.iter_mut() {
             if key_input.pressed(KeyCode::KeyL) {
-                cam.target_transform.translation = cube.translation;
+                cam.target_focus.translation = cube.translation;
                 cam.snap = true;
             }
             if key_input.just_pressed(KeyCode::KeyK) {
-                cam.target_transform.translation = cube.translation;
+                cam.target_focus.translation = cube.translation;
                 cam.target_zoom = 0.4;
             }
         }

@@ -80,16 +80,16 @@ pub fn pan(
 
         // Keyboard pan
         if button_input.pressed(controller.key_up) {
-            delta += Vec3::from(cam.target_transform.forward())
+            delta += Vec3::from(cam.target_focus.forward())
         }
         if button_input.pressed(controller.key_down) {
-            delta += Vec3::from(cam.target_transform.back())
+            delta += Vec3::from(cam.target_focus.back())
         }
         if button_input.pressed(controller.key_left) {
-            delta += Vec3::from(cam.target_transform.left())
+            delta += Vec3::from(cam.target_focus.left())
         }
         if button_input.pressed(controller.key_right) {
-            delta += Vec3::from(cam.target_transform.right())
+            delta += Vec3::from(cam.target_focus.right())
         }
 
         // Edge pan
@@ -101,31 +101,31 @@ pub fn pan(
                     let pan_width = win_h * cam.edge_pan_width;
                     // Pan left
                     if cursor_position.x < pan_width {
-                        delta += Vec3::from(cam.target_transform.left())
+                        delta += Vec3::from(cam.target_focus.left())
                     }
                     // Pan right
                     if cursor_position.x > win_w - pan_width {
-                        delta += Vec3::from(cam.target_transform.right())
+                        delta += Vec3::from(cam.target_focus.right())
                     }
                     // Pan up
                     if cursor_position.y < pan_width {
-                        delta += Vec3::from(cam.target_transform.forward())
+                        delta += Vec3::from(cam.target_focus.forward())
                     }
                     // Pan down
                     if cursor_position.y > win_h - pan_width {
-                        delta += Vec3::from(cam.target_transform.back())
+                        delta += Vec3::from(cam.target_focus.back())
                     }
                 }
             }
         }
 
-        let new_target = cam.target_transform.translation
+        let new_target = cam.target_focus.translation
             + delta.normalize_or_zero()
             * time.delta_seconds()
             * cam.pan_speed
             // Scale based on zoom so it (roughly) feels the same speed at different zoom levels
             * cam.target_zoom.remap(0.0, 1.0, 1.0, 0.5);
-        cam.target_transform.translation = new_target;
+        cam.target_focus.translation = new_target;
     }
 }
 
@@ -142,7 +142,7 @@ pub fn rotate(
                 // Adjust based on window size, so that moving mouse entire width of window
                 // will be one half rotation (180 degrees)
                 let delta_x = mouse_delta.x / primary_window.width() * PI;
-                cam.target_transform.rotate_local_y(-delta_x);
+                cam.target_focus.rotate_local_y(-delta_x);
             }
         }
     }
