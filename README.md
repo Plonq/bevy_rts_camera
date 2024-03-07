@@ -19,7 +19,7 @@ simple use cases, and does not try to cover advanced requirements.
 - Automatically follows whatever you mark as 'ground'
 - Smoothed movement
 - Customisable controls and other settings
-- Built-in controls are optional, you can control the movement manually
+- Comes with optional controller, or you can control it yourself
 
 ## Default Controller
 
