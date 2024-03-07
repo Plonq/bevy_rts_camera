@@ -99,6 +99,7 @@ pub struct RtsCamera {
     /// Updated automatically when using `RtsCameraController`, but should be updated manually
     /// if you implement your own controls. You can also change this when adding this component to
     /// set the starting position.
+    /// Defaults to `Transform::IDENTITY`.
     pub target_focus: Transform,
     /// The current zoom level, between `0.0` and `1.0`, where 0 is no zoom (`height_max`), and 1 is
     /// max zoom (`height_min`).
@@ -110,6 +111,7 @@ pub struct RtsCamera {
     /// Updated automatically when using `RtsCameraController`, but should be updated manually
     /// if you implement your own controls. You can also change this when adding this component to
     /// set the starting zoom.
+    /// Defaults to `0.0`.
     pub target_zoom: f32,
     /// Whether the camera should snap to `target_focus` and `target_zoom`. Will be set to
     /// `false` after one frame. Useful if you want to lock the camera to a specific target (e.g.
