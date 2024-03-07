@@ -52,7 +52,6 @@ impl Default for RtsCameraController {
 
 pub fn zoom(
     mut mouse_wheel: EventReader<MouseWheel>,
-    // Only query if controller is present
     mut cam_q: Query<(&mut RtsCamera, &RtsCameraController)>,
 ) {
     for (mut cam, _) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
