@@ -14,7 +14,27 @@ impl Plugin for RtsCameraControllerPlugin {
 }
 
 /// Optional camera controller. If you want to use an input manager, don't use this and instead
-/// control the camera yourself.
+/// control the camera yourself by updating `RtsCamera.target_focus` and `RtsCamera.target_zoom`.
+/// # Example
+/// ```no_run
+/// # use bevy::prelude::*;
+/// # use bevy_rts_camera::{RtsCameraPlugin, RtsCamera, RtsCameraController};
+/// # fn main() {
+/// #     App::new()
+/// #         .add_plugins(DefaultPlugins)
+/// #         .add_plugins(RtsCameraPlugin)
+/// #         .add_systems(Startup, setup)
+/// #         .run();
+/// # }
+/// fn setup(mut commands: Commands) {
+///     commands
+///         .spawn((
+///             Camera3dBundle::default(),
+///             RtsCamera::default(),
+///             RtsCameraController::default(),
+///         ));
+///  }
+/// ```
 #[derive(Component, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct RtsCameraController {
     /// The key that will pan the camera up (or forward).

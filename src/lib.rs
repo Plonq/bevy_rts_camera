@@ -49,6 +49,7 @@ pub struct RtsCameraSystemSet;
 /// Marks a camera to be used as an RTS camera.
 /// Only one instance of this component should exist at any given moment.
 /// Typically you'll add this alongside a `Camera3dBundle`.
+/// This does not include a controller. Add `RtsCameraController` as well if you want.
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
