@@ -64,7 +64,8 @@ commands.spawn((
 This will set up a camera at world origin with good defaults based on a roughly realistic scale (where an average human
 is 1.75 units tall).
 
-Check out the [advanced example](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples/advanced.rs) to see the possible configuration options.
+Check out the [advanced example](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples/advanced.rs) to see
+the possible configuration options.
 
 ## Version Compatibility
 
