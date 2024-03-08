@@ -5,9 +5,7 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
-use bevy_rts_camera::{
-    Ground, RtsCamera, RtsCameraController, RtsCameraPlugin, RtsCameraSystemSet,
-};
+use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin, RtsCameraSystemSet};
 
 fn main() {
     App::new()
@@ -138,7 +136,7 @@ Press T to toggle controls (K and L will still work)"
             target_zoom: 0.2,
             ..default()
         },
-        RtsCameraController {
+        RtsCameraControls {
             // Change pan controls to WASD
             key_up: KeyCode::KeyW,
             key_down: KeyCode::KeyS,
@@ -191,7 +189,7 @@ fn lock_or_jump(
 }
 
 fn toggle_controls(
-    mut controls_q: Query<&mut RtsCameraController>,
+    mut controls_q: Query<&mut RtsCameraControls>,
     key_input: Res<ButtonInput<KeyCode>>,
 ) {
     for mut controls in controls_q.iter_mut() {

@@ -5,9 +5,9 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use std::f32::consts::PI;
 
-pub struct RtsCameraControllerPlugin;
+pub struct RtsCameraControlsPlugin;
 
-impl Plugin for RtsCameraControllerPlugin {
+impl Plugin for RtsCameraControlsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (zoom, pan, rotate).before(RtsCameraSystemSet));
     }
@@ -18,7 +18,7 @@ impl Plugin for RtsCameraControllerPlugin {
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
-/// # use bevy_rts_camera::{RtsCameraPlugin, RtsCamera, RtsCameraController};
+/// # use bevy_rts_camera::{RtsCameraPlugin, RtsCamera, RtsCameraControls};
 /// # fn main() {
 /// #     App::new()
 /// #         .add_plugins(DefaultPlugins)
@@ -31,12 +31,12 @@ impl Plugin for RtsCameraControllerPlugin {
 ///         .spawn((
 ///             Camera3dBundle::default(),
 ///             RtsCamera::default(),
-///             RtsCameraController::default(),
+///             RtsCameraControls::default(),
 ///         ));
 ///  }
 /// ```
 #[derive(Component, Debug, PartialEq, Clone)]
-pub struct RtsCameraController {
+pub struct RtsCameraControls {
     /// The key that will pan the camera up (or forward).
     /// Defaults to `KeyCode::ArrowUp`.
     pub key_up: KeyCode,
@@ -64,9 +64,9 @@ pub struct RtsCameraController {
     pub enabled: bool,
 }
 
-impl Default for RtsCameraController {
+impl Default for RtsCameraControls {
     fn default() -> Self {
-        RtsCameraController {
+        RtsCameraControls {
             key_up: KeyCode::ArrowUp,
             key_down: KeyCode::ArrowDown,
             key_left: KeyCode::ArrowLeft,
@@ -81,7 +81,7 @@ impl Default for RtsCameraController {
 
 pub fn zoom(
     mut mouse_wheel: EventReader<MouseWheel>,
-    mut cam_q: Query<(&mut RtsCamera, &RtsCameraController)>,
+    mut cam_q: Query<(&mut RtsCamera, &RtsCameraControls)>,
 ) {
     for (mut cam, _) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
         let zoom_amount = mouse_wheel
@@ -97,7 +97,7 @@ pub fn zoom(
 }
 
 pub fn pan(
-    mut cam_q: Query<(&mut RtsCamera, &RtsCameraController)>,
+    mut cam_q: Query<(&mut RtsCamera, &RtsCameraControls)>,
     button_input: Res<ButtonInput<KeyCode>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
@@ -158,7 +158,7 @@ pub fn pan(
 }
 
 pub fn rotate(
-    mut cam_q: Query<(&mut RtsCamera, &RtsCameraController)>,
+    mut cam_q: Query<(&mut RtsCamera, &RtsCameraControls)>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     mut mouse_motion: EventReader<MouseMotion>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,

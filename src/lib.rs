@@ -5,8 +5,8 @@ use bevy::prelude::*;
 use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
 
 mod controller;
-use crate::controller::RtsCameraControllerPlugin;
-pub use controller::RtsCameraController;
+use crate::controller::RtsCameraControlsPlugin;
+pub use controller::RtsCameraControls;
 
 /// Bevy plugin that provides RTS camera controls.
 /// # Example
@@ -24,7 +24,7 @@ pub struct RtsCameraPlugin;
 
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RtsCameraControllerPlugin)
+        app.add_plugins(RtsCameraControlsPlugin)
             .add_systems(PreUpdate, initialize)
             .add_systems(
                 Update,
@@ -49,7 +49,7 @@ pub struct RtsCameraSystemSet;
 /// Marks a camera to be used as an RTS camera.
 /// Only one instance of this component should exist at any given moment.
 /// Typically you'll add this alongside a `Camera3dBundle`.
-/// This does not include a controller. Add `RtsCameraController` as well if you want.
+/// This does not include a controller. Add `RtsCameraControls` as well if you want.
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
@@ -96,7 +96,7 @@ pub struct RtsCamera {
     pub focus: Transform,
     /// The target focus of the camera, including the target orientation (which way is forward).
     /// This is where the camera should move to, and is how smoothing is implemented
-    /// Updated automatically when using `RtsCameraController`, but should be updated manually
+    /// Updated automatically when using `RtsCameraControls`, but should be updated manually
     /// if you implement your own controls. You can also change this when adding this component to
     /// set the starting position.
     /// Defaults to `Transform::IDENTITY`.
@@ -108,7 +108,7 @@ pub struct RtsCamera {
     /// Defaults to `0.0`.
     pub zoom: f32,
     /// The target zoom level. Used to implement zoom smoothing.
-    /// Updated automatically when using `RtsCameraController`, but should be updated manually
+    /// Updated automatically when using `RtsCameraControls`, but should be updated manually
     /// if you implement your own controls. You can also change this when adding this component to
     /// set the starting zoom.
     /// Defaults to `0.0`.

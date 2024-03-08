@@ -45,7 +45,7 @@ Add `RtsCamera` to a camera:
 commands.spawn((
     Camera3dBundle::default(),
     RtsCamera::default(),
-    RtsCameraController::default(),  // Optional
+    RtsCameraControls::default(),  // Optional
 ));
 ```
 
