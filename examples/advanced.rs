@@ -5,42 +5,10 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
-use bevy_rts_camera::{
-    CameraConfig, CameraControls, CameraSnapTo, CameraTargetTransform, CameraTargetZoom, Ground,
-    RtsCamera, RtsCameraPlugin, RtsCameraSystemSet,
-};
+use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin, RtsCameraSystemSet};
 
 fn main() {
     App::new()
-        // Set starting position of the camera (note Y is ignored because it's controlled by zoom)
-        .insert_resource(CameraTargetTransform(Transform::from_xyz(3.0, 30.0, 1.0)))
-        // Set starting zoom to 50%
-        .insert_resource(CameraTargetZoom(0.5))
-        .insert_resource(CameraConfig {
-            // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
-            edge_pan_width: 0.1,
-            // Increase pan speed
-            pan_speed: 25.0,
-            // Increase min height (decrease max zoom)
-            height_min: 10.0,
-            // Increase max height (decrease min zoom)
-            height_max: 50.0,
-            // Change the angle of the camera to 10 degrees (0 is looking straight down)
-            angle: 10.0f32.to_radians(),
-            // Decrease smoothing
-            smoothness: 0.1,
-        })
-        .insert_resource(CameraControls {
-            // Change pan controls to WASD
-            key_up: KeyCode::KeyW,
-            key_down: KeyCode::KeyS,
-            key_left: KeyCode::KeyA,
-            key_right: KeyCode::KeyD,
-            // Change rotate to right click
-            button_rotate: MouseButton::Right,
-            // Keep it enabled (wouldn't be much of a demo if we set this to false)
-            enabled: true,
-        })
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
         .add_systems(Startup, setup)
@@ -151,7 +119,38 @@ Press T to toggle controls (K and L will still work)"
         ..default()
     });
     // Camera
-    commands.spawn((Camera3dBundle::default(), RtsCamera));
+    commands.spawn((
+        Camera3dBundle::default(),
+        RtsCamera {
+            // Increase min height (decrease max zoom)
+            height_min: 10.0,
+            // Increase max height (decrease min zoom)
+            height_max: 50.0,
+            // Change the angle of the camera to 10 degrees (0 is looking straight down)
+            angle: 10.0f32.to_radians(),
+            // Decrease smoothing
+            smoothness: 0.1,
+            // Change starting position
+            target_focus: Transform::from_xyz(3.0, 0.0, -3.0),
+            // Change starting zoom level
+            target_zoom: 0.2,
+            ..default()
+        },
+        RtsCameraControls {
+            // Change pan controls to WASD
+            key_up: KeyCode::KeyW,
+            key_down: KeyCode::KeyS,
+            key_left: KeyCode::KeyA,
+            key_right: KeyCode::KeyD,
+            // Change rotate to right click
+            button_rotate: MouseButton::Right,
+            // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
+            edge_pan_width: 0.1,
+            // Increase pan speed
+            pan_speed: 25.0,
+            ..default()
+        },
+    ));
 }
 
 // Move a unit in a circle
@@ -171,31 +170,31 @@ fn move_unit(
 
 // Either jump to the moving unit (press K) or lock onto it (hold L)
 fn lock_or_jump(
-    mut commands: Commands,
-    target_tfm: Res<CameraTargetTransform>,
     key_input: Res<ButtonInput<KeyCode>>,
     cube_q: Query<&Transform, With<Move>>,
+    mut cam_q: Query<&mut RtsCamera>,
 ) {
     for cube in cube_q.iter() {
-        let new_tfm = target_tfm.0.with_translation(cube.translation);
-        if key_input.pressed(KeyCode::KeyL) {
-            commands.insert_resource(CameraTargetTransform(new_tfm));
-            commands.insert_resource(CameraSnapTo(true));
-        }
-        if key_input.just_pressed(KeyCode::KeyK) {
-            commands.insert_resource(CameraTargetTransform(new_tfm));
-            // Zoom won't be 'locked' (it will still be smoothed), because zooming while locking
-            // the position is possible
-            commands.insert_resource(CameraTargetZoom(0.4));
+        for mut cam in cam_q.iter_mut() {
+            if key_input.pressed(KeyCode::KeyL) {
+                cam.target_focus.translation = cube.translation;
+                cam.snap = true;
+            }
+            if key_input.just_pressed(KeyCode::KeyK) {
+                cam.target_focus.translation = cube.translation;
+                cam.target_zoom = 0.4;
+            }
         }
     }
 }
 
 fn toggle_controls(
-    mut camera_controls: ResMut<CameraControls>,
+    mut controls_q: Query<&mut RtsCameraControls>,
     key_input: Res<ButtonInput<KeyCode>>,
 ) {
-    if key_input.just_pressed(KeyCode::KeyT) {
-        camera_controls.enabled = !camera_controls.enabled;
+    for mut controls in controls_q.iter_mut() {
+        if key_input.just_pressed(KeyCode::KeyT) {
+            controls.enabled = !controls.enabled;
+        }
     }
 }

@@ -18,3 +18,4 @@ bevy_mod_raycast = { version = "0.17" }
 
 [dev-dependencies]
 bevy = { version = "0.13" }
+leafwing-input-manager = "0.13"

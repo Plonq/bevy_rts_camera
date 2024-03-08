@@ -19,10 +19,11 @@ simple use cases, and does not try to cover advanced requirements.
 - Automatically follows whatever you mark as 'ground'
 - Smoothed movement
 - Customisable controls and other settings
+- Comes with optional controller, or you can control it yourself
 
-## Controls
+## Default Controller
 
-Default controls:
+A default controller is included with these default controls:
 
 - Arrow Keys: pan
 - Mouse Wheel: zoom
@@ -44,6 +45,7 @@ Add `RtsCamera` to a camera:
 commands.spawn((
     Camera3dBundle::default(),
     RtsCamera::default(),
+    RtsCameraControls::default(),  // Optional
 ));
 ```
 
@@ -63,7 +65,7 @@ This will set up a camera at world origin with good defaults based on a roughly 
 is 1.75 units tall).
 
 Check out the [advanced example](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples/advanced.rs) to see
-all the possible configuration options.
+the possible configuration options.
 
 ## Version Compatibility
 

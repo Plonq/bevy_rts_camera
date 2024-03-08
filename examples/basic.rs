@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use bevy_rts_camera::{Ground, RtsCamera, RtsCameraPlugin};
+use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin};
 
 fn main() {
     App::new()
@@ -84,5 +84,9 @@ fn setup(
         ..default()
     });
     // Camera
-    commands.spawn((Camera3dBundle::default(), RtsCamera));
+    commands.spawn((
+        Camera3dBundle::default(),
+        RtsCamera::default(),
+        RtsCameraControls::default(),
+    ));
 }
