@@ -123,17 +123,19 @@ Press T to toggle controls (K and L will still work)"
         Camera3dBundle::default(),
         RtsCamera {
             // Increase min height (decrease max zoom)
-            height_min: 10.0,
+            // height_min: 10.0,
             // Increase max height (decrease min zoom)
             height_max: 50.0,
-            // Change the angle of the camera to 10 degrees (0 is looking straight down)
-            angle: 10.0f32.to_radians(),
+            // Change the angle of the camera to 35 degrees
+            min_angle: 35.0f32.to_radians(),
             // Decrease smoothing
             smoothness: 0.1,
             // Change starting position
             target_focus: Transform::from_xyz(3.0, 0.0, -3.0),
             // Change starting zoom level
             target_zoom: 0.2,
+            // Disable dynamic angle (angle of camera will stay at `min_angle`)
+            // dynamic_angle: false,
             ..default()
         },
         RtsCameraControls {
