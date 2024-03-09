@@ -84,13 +84,13 @@ pub struct RtsCamera {
     pub height_max: f32,
     /// The current angle in radians of the camera, where a value of `0.0` is looking directly down
     /// (-Y), and a value of `TAU / 4.0` (90 degrees) is looking directly forward.
-    /// You probably don't want to set this manually, but rather set `min_angle`.
+    /// If you want to customise the angle, set `min_angle` instead.
     /// Defaults to 25 degrees.
     pub angle: f32,
     /// The target angle in radians of the camera, where a value of `0.0` is looking directly down
     /// (-Y), and a value of `TAU / 4.0` (90 degrees) is looking directly forward.
     /// The camera will smoothly transition from `angle` to `target_angle`.
-    /// You probably don't want to set this manually, but rather set `min_angle`.
+    /// If you want to customise the angle, set `min_angle` instead.
     /// Defaults to 25 degrees.
     pub target_angle: f32,
     /// The angle of the camera at no zoom (max height). By default, angle increases as you zoom in.
