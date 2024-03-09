@@ -71,7 +71,7 @@ the possible configuration options.
 
 | bevy | bevy_panorbit_camera |
 |------|----------------------|
-| 0.13 | 0.1-0.2              |
+| 0.13 | 0.1-0.3              |
 
 ## License
 
