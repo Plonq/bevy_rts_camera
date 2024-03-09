@@ -96,7 +96,7 @@ pub struct RtsCamera {
     /// The angle of the camera at no zoom (max height). By default, angle increases as you zoom in.
     /// If `dynamic_angle` is disabled, then that does not happen and the camera will stay fixed at
     /// `min_zoom`.
-    /// This is angle value you should change when adding this component.
+    /// If you want to customise the angle, this is what you want to change.
     /// Defaults to 25 degrees.
     pub min_angle: f32,
     /// Whether the camera should increase its angle the more you zoom in, so you can see
