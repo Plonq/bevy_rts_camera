@@ -1,13 +1,17 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
-use bevy::prelude::*;
-use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
 use std::f32::consts::TAU;
 
-mod controller;
-use crate::controller::RtsCameraControlsPlugin;
+use bevy::math::bounding::Aabb2d;
+use bevy::prelude::*;
+use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
+
 pub use controller::RtsCameraControls;
+
+use crate::controller::RtsCameraControlsPlugin;
+
+mod controller;
 
 const MAX_ANGLE: f32 = TAU / 5.0;
 
@@ -36,6 +40,7 @@ impl Plugin for RtsCameraPlugin {
                     snap_to_target,
                     dynamic_angle,
                     move_towards_target,
+                    apply_bounds,
                     update_camera_transform,
                 )
                     .chain()
@@ -73,7 +78,7 @@ pub struct RtsCameraSystemSet;
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Copy, Clone, Debug, PartialEq)]
+#[derive(Component, Copy, Clone, Debug)]
 pub struct RtsCamera {
     /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.
     /// Should be set to a value that avoids clipping.
@@ -82,6 +87,10 @@ pub struct RtsCamera {
     /// The maximum height the camera can zoom out to, or the height of the camera at `0.0` zoom.
     /// Defaults to `10.0`.
     pub height_max: f32,
+    /// The bounds in which the camera is constrained, along the XZ plane of `target_focus`. This
+    /// prevents panning past these limits. Note that it limits how far the focus (what you're
+    /// looking at), it doesn't calculate what the camera can see.
+    pub bounds: Aabb2d,
     /// The current angle in radians of the camera, where a value of `0.0` is looking directly down
     /// (-Y), and a value of `TAU / 4.0` (90 degrees) is looking directly forward.
     /// If you want to customise the angle, set `min_angle` instead.
@@ -145,6 +154,7 @@ pub struct RtsCamera {
 impl Default for RtsCamera {
     fn default() -> Self {
         RtsCamera {
+            bounds: Aabb2d::new(Vec2::ZERO, Vec2::new(20.0, 20.0)),
             height_min: 2.0,
             height_max: 30.0,
             angle: 20.0f32.to_radians(),
@@ -236,6 +246,21 @@ fn move_towards_target(mut cam_q: Query<&mut RtsCamera>, time: Res<Time>) {
             cam.target_angle,
             1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
         );
+    }
+}
+
+fn apply_bounds(mut cam_q: Query<&mut RtsCamera>) {
+    for mut cam in cam_q.iter_mut() {
+        let closest_point = cam.bounds.closest_point(Vec2::new(
+            cam.target_focus.translation.x,
+            cam.target_focus.translation.z,
+        ));
+        let closest_point = Vec3::new(
+            closest_point.x,
+            cam.target_focus.translation.y,
+            closest_point.y,
+        );
+        cam.target_focus.translation = closest_point;
     }
 }
 
