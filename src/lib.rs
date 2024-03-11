@@ -88,8 +88,10 @@ pub struct RtsCamera {
     /// Defaults to `10.0`.
     pub height_max: f32,
     /// The bounds in which the camera is constrained, along the XZ plane of `target_focus`. This
-    /// prevents panning past these limits. Note that it limits how far the focus (what you're
-    /// looking at), it doesn't calculate what the camera can see.
+    /// prevents panning past these limits. Imagine looking directly down relative to `target_focus`
+    /// and the XZ plane corresponds XY of the Vec2s, except +Y is up/forward (-Z).
+    /// Defaults to `Aabb2d::new(Vec2::ZERO, Vec2::new(20.0, 20.0))` (i.e. can move 20.0 in any
+    /// direction starting at world center).
     pub bounds: Aabb2d,
     /// The current angle in radians of the camera, where a value of `0.0` is looking directly down
     /// (-Y), and a value of `TAU / 4.0` (90 degrees) is looking directly forward.
@@ -253,12 +255,12 @@ fn apply_bounds(mut cam_q: Query<&mut RtsCamera>) {
     for mut cam in cam_q.iter_mut() {
         let closest_point = cam.bounds.closest_point(Vec2::new(
             cam.target_focus.translation.x,
-            cam.target_focus.translation.z,
+            -cam.target_focus.translation.z,
         ));
         let closest_point = Vec3::new(
             closest_point.x,
             cam.target_focus.translation.y,
-            closest_point.y,
+            -closest_point.y,
         );
         cam.target_focus.translation = closest_point;
     }
