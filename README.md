@@ -69,7 +69,7 @@ the possible configuration options.
 
 ## Version Compatibility
 
-| bevy | bevy_panorbit_camera |
+| bevy | bevy_rts_camera |
 |------|----------------------|
 | 0.13 | 0.1-0.4              |
 
