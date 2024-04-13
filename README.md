@@ -70,8 +70,8 @@ the possible configuration options.
 ## Version Compatibility
 
 | bevy | bevy_rts_camera |
-|------|----------------------|
-| 0.13 | 0.1-0.4              |
+|------|-----------------|
+| 0.13 | 0.1-0.4         |
 
 ## License
 
