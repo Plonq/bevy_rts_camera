@@ -6,6 +6,7 @@ use std::f32::consts::TAU;
 use bevy::math::bounding::Aabb2d;
 use bevy::prelude::*;
 use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
+use bevy_mod_raycast::DefaultRaycastingPlugin;
 
 pub use controller::RtsCameraControls;
 
