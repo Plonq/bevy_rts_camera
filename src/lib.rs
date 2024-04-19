@@ -273,7 +273,7 @@ fn update_camera_transform(mut cam_q: Query<(&mut Transform, &RtsCamera)>) {
         if cam.dynamic_angle {
             // Subtract up to half of the offset, so the camera gets closer to the target
             // without ending up sitting on top of it (i.e. to get a nice front view)
-            // camera_offset *= 1.0 - ease_in_circular(cam.zoom).remap(0.0, 1.0, 0.0, 0.4);
+            camera_offset *= 1.0 - ease_in_circular(cam.zoom).remap(0.0, 1.0, 0.0, 0.4);
         }
         tfm.rotation = cam.focus.rotation * rotation;
         tfm.translation =
