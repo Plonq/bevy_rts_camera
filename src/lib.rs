@@ -206,7 +206,7 @@ fn follow_ground(
         if let Some(hit1) = cast_ray(&mut raycast, ray_start, Direction3d::NEG_Y, &|entity| {
             ground_q.get(entity).is_ok()
         }) {
-            cam.target_focus.translation.y = hit1.position().y; // + cam.height_max.lerp(cam.height_min, cam.target_zoom);
+            cam.target_focus.translation.y = hit1.position().y;
         }
     }
 }
