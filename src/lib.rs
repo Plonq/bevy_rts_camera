@@ -206,8 +206,7 @@ fn follow_ground(
         if let Some(hit1) = cast_ray(&mut raycast, ray_start, Direction3d::NEG_Y, &|entity| {
             ground_q.get(entity).is_ok()
         }) {
-            cam.target_focus.translation.y =
-                hit1.position().y + cam.height_max.lerp(cam.height_min, cam.target_zoom);
+            cam.target_focus.translation.y = hit1.position().y;
         }
     }
 }
@@ -269,14 +268,16 @@ fn apply_bounds(mut cam_q: Query<&mut RtsCamera>) {
 fn update_camera_transform(mut cam_q: Query<(&mut Transform, &RtsCamera)>) {
     for (mut tfm, cam) in cam_q.iter_mut() {
         let rotation = Quat::from_rotation_x(cam.angle - 90f32.to_radians());
-        let mut camera_offset = (cam.height_max.lerp(cam.height_min, cam.zoom)) * cam.angle.tan();
+        let camera_height = cam.height_max.lerp(cam.height_min, cam.zoom);
+        let mut camera_offset = camera_height * cam.angle.tan();
         if cam.dynamic_angle {
             // Subtract up to half of the offset, so the camera gets closer to the target
             // without ending up sitting on top of it (i.e. to get a nice front view)
             camera_offset *= 1.0 - ease_in_circular(cam.zoom).remap(0.0, 1.0, 0.0, 0.4);
         }
         tfm.rotation = cam.focus.rotation * rotation;
-        tfm.translation = cam.focus.translation + cam.focus.back() * camera_offset;
+        tfm.translation =
+            cam.focus.translation + (Vec3::Y * camera_height) + (cam.focus.back() * camera_offset);
     }
 }
 
