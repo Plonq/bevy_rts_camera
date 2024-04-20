@@ -225,7 +225,9 @@ fn snap_to_target(mut cam_q: Query<&mut RtsCamera>) {
 
 fn dynamic_angle(mut query: Query<&mut RtsCamera>) {
     for mut cam in query.iter_mut().filter(|cam| cam.dynamic_angle) {
-        cam.target_angle = cam.min_angle.lerp(MAX_ANGLE, ease_in_circular(cam.zoom));
+        cam.target_angle = cam
+            .min_angle
+            .lerp(MAX_ANGLE, ease_in_circular(cam.target_zoom));
     }
 }
 
@@ -243,7 +245,7 @@ fn move_towards_target(mut cam_q: Query<&mut RtsCamera>, time: Res<Time>) {
             cam.target_zoom,
             1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
         );
-        cam.angle = cam.target_angle.lerp(
+        cam.angle = cam.angle.lerp(
             cam.target_angle,
             1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
         );
@@ -269,12 +271,8 @@ fn update_camera_transform(mut cam_q: Query<(&mut Transform, &RtsCamera)>) {
     for (mut tfm, cam) in cam_q.iter_mut() {
         let rotation = Quat::from_rotation_x(cam.angle - 90f32.to_radians());
         let camera_height = cam.height_max.lerp(cam.height_min, cam.zoom);
-        let mut camera_offset = camera_height * cam.angle.tan();
-        if cam.dynamic_angle {
-            // Subtract up to half of the offset, so the camera gets closer to the target
-            // without ending up sitting on top of it (i.e. to get a nice front view)
-            camera_offset *= 1.0 - ease_in_circular(cam.zoom).remap(0.0, 1.0, 0.0, 0.4);
-        }
+        let camera_offset = camera_height * cam.angle.tan();
+
         tfm.rotation = cam.focus.rotation * rotation;
         tfm.translation =
             cam.focus.translation + (Vec3::Y * camera_height) + (cam.focus.back() * camera_offset);
