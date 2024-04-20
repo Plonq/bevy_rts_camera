@@ -225,7 +225,9 @@ fn snap_to_target(mut cam_q: Query<&mut RtsCamera>) {
 
 fn dynamic_angle(mut query: Query<&mut RtsCamera>) {
     for mut cam in query.iter_mut().filter(|cam| cam.dynamic_angle) {
-        cam.target_angle = cam.min_angle.lerp(MAX_ANGLE, cam.target_zoom);
+        cam.target_angle = cam
+            .min_angle
+            .lerp(MAX_ANGLE, ease_in_circular(cam.target_zoom));
     }
 }
 
