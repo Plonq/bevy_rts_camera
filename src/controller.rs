@@ -57,6 +57,9 @@ pub struct RtsCameraControls {
     /// The mouse button used to rotate the camera.
     /// Defaults to `MouseButton::Middle`.
     pub button_rotate: MouseButton,
+    /// The mouse button used to 'drag pan' the camera.
+    /// Defaults to `None`.
+    pub button_drag: Option<MouseButton>,
     /// How far away from the side of the screen edge pan will kick in, defined as a percentage
     /// of the window's height. Set to `0.0` to disable edge panning.
     /// Defaults to `0.05` (5%).
@@ -77,6 +80,7 @@ impl Default for RtsCameraControls {
             key_left: KeyCode::ArrowLeft,
             key_right: KeyCode::ArrowRight,
             button_rotate: MouseButton::Middle,
+            button_drag: None,
             edge_pan_width: 0.05,
             pan_speed: 15.0,
             enabled: true,
@@ -109,6 +113,13 @@ pub fn pan(
     time: Res<Time>,
 ) {
     for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
+        if controller
+            .button_drag
+            .map_or(false, |btn| mouse_input.pressed(btn))
+        {
+            continue;
+        }
+
         let mut delta = Vec3::ZERO;
 
         // Keyboard pan
@@ -164,24 +175,27 @@ pub fn pan(
 
 pub fn grab_pan(
     mut cam_q: Query<(
-        &GlobalTransform,
+        &Transform,
         &mut RtsCamera,
         &RtsCameraControls,
         &Camera,
+        &Projection,
     )>,
-    window_q: Query<&Window, With<PrimaryWindow>>,
     mut mouse_motion: EventReader<MouseMotion>,
     mouse_button: Res<ButtonInput<MouseButton>>,
     mut raycast: Raycast,
     cursor_ray: Res<CursorRay>,
     mut ray_hit: Local<Option<Vec3>>,
-    mut gizmos: Gizmos,
     ground_q: Query<Entity, With<Ground>>,
 ) {
-    for (cam_tfm, mut cam, controller, camera) in
-        cam_q.iter_mut().filter(|(_, _, ctrl, _)| ctrl.enabled)
+    for (cam_tfm, mut cam, controller, camera, projection) in
+        cam_q.iter_mut().filter(|(_, _, ctrl, _, _)| ctrl.enabled)
     {
-        if mouse_button.just_pressed(MouseButton::Left) {
+        let Some(drag_button) = controller.button_drag else {
+            continue;
+        };
+
+        if mouse_button.just_pressed(drag_button) {
             if let Some(cursor_ray) = **cursor_ray {
                 *ray_hit = raycast
                     .cast_ray(
@@ -196,45 +210,32 @@ pub fn grab_pan(
             }
         }
 
-        if mouse_button.just_released(MouseButton::Left) {
+        if mouse_button.just_released(drag_button) {
             *ray_hit = None;
         }
 
-        if mouse_button.pressed(MouseButton::Left) {
-            if let Some(ray_hit_pos) = *ray_hit {
-                let window = window_q.single();
+        if mouse_button.pressed(drag_button) {
+            let mut mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
 
-                let Some(cursor_position) = window.cursor_position() else {
-                    // if the cursor is not inside the window, we can't do anything
-                    return;
-                };
-
-                let Some(ray) = camera.viewport_to_world(cam_tfm, cursor_position) else {
-                    // if it was impossible to compute for whatever reason; we can't do anything
-                    return;
-                };
-
-                let plane_origin = ray_hit_pos;
-                let plane = Plane3d::new(Vec3::Y);
-
-                let Some(distance) = ray.intersect_plane(plane_origin, plane) else {
-                    // If the ray does not intersect the ground
-                    // (the camera is not looking towards the ground), we can't do anything
-                    return;
-                };
-
-                let hit_pos = ray.origin + (ray.direction * distance);
-                gizmos.sphere(hit_pos, Quat::IDENTITY, 0.1, Color::RED);
-                gizmos.line(ray_hit_pos, hit_pos, Color::WHITE);
-                let move_delta = hit_pos - ray_hit_pos;
-                cam.target_focus.translation -= move_delta;
-
-                *ray_hit = Some(hit_pos);
+            let mut multiplier = 1.0;
+            let vp_size = camera.logical_viewport_size().unwrap();
+            match *projection {
+                Projection::Perspective(ref p) => {
+                    mouse_delta *= Vec2::new(p.fov * p.aspect_ratio, p.fov) / vp_size;
+                    multiplier = (*ray_hit).map_or_else(
+                        || cam_tfm.translation.distance(cam.focus.translation),
+                        |hit| hit.distance(cam_tfm.translation),
+                    );
+                }
+                Projection::Orthographic(ref p) => {
+                    mouse_delta *= Vec2::new(p.area.width(), p.area.height()) / vp_size;
+                }
             }
-        }
 
-        if let Some(ray_hit) = *ray_hit {
-            gizmos.sphere(ray_hit, Quat::IDENTITY, 0.3, Color::LIME_GREEN);
+            let mut delta = Vec3::ZERO;
+            delta += cam.target_focus.forward() * mouse_delta.y;
+            delta += cam.target_focus.right() * -mouse_delta.x;
+            cam.target_focus.translation += delta * multiplier;
         }
     }
 }
