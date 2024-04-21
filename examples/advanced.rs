@@ -144,8 +144,10 @@ Press T to toggle controls (K and L will still work)"
             key_down: KeyCode::KeyS,
             key_left: KeyCode::KeyA,
             key_right: KeyCode::KeyD,
-            // Change rotate to right click
+            // Rotate the camera with right click
             button_rotate: MouseButton::Right,
+            // Drag pan with middle click
+            button_drag: Some(MouseButton::Middle),
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
             edge_pan_width: 0.1,
             // Increase pan speed
