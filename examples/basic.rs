@@ -86,10 +86,7 @@ fn setup(
     // Camera
     commands.spawn((
         Camera3dBundle::default(),
-        RtsCamera {
-            smoothness: 0.0,
-            ..default()
-        },
+        RtsCamera::default(),
         RtsCameraControls::default(),
     ));
 }
