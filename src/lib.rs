@@ -177,7 +177,8 @@ impl Default for RtsCamera {
 /// (based on min/max height and zoom) above any meshes marked with this component (using a ray
 /// cast).
 /// You'll likely want to mark all terrain entities, but not things like buildings, trees, or units.
-#[derive(Component, Copy, Clone, Debug, PartialEq)]
+#[derive(Component, Copy, Clone, Debug, PartialEq, Reflect)]
+#[reflect(Component)]
 pub struct Ground;
 
 fn initialize(mut cam_q: Query<&mut RtsCamera, Added<RtsCamera>>) {
