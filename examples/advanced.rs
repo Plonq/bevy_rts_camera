@@ -5,12 +5,17 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
-use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin, RtsCameraSystemSet};
+use bevy_rts_camera::{
+    Ground, RtsCamera, RtsCameraControls, RtsCameraControlsInputPlugin, RtsCameraControlsPlugin,
+    RtsCameraPlugin, RtsCameraSystemSet,
+};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
+        .add_plugins(RtsCameraControlsPlugin)
+        .add_plugins(RtsCameraControlsInputPlugin)
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -147,7 +152,7 @@ Press T to toggle controls (K and L will still work)"
             // Rotate the camera with right click
             button_rotate: MouseButton::Right,
             // Drag pan with middle click
-            button_drag: Some(MouseButton::Middle),
+            button_grab: Some(MouseButton::Middle),
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
             edge_pan_width: 0.1,
             // Increase pan speed

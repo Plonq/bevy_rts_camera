@@ -1,20 +1,26 @@
-//! A basic scene with some "terrain" and "units" to demonstrate how to set up a basic
-//! RTS camera.
+//! Demonstrates how you would replace the built-in controller with a custom solution, for example
+//! so you can use an input manager.
 
 use bevy::prelude::*;
 
 use bevy_rts_camera::{
-    Ground, RtsCamera, RtsCameraControls, RtsCameraControlsInputPlugin, RtsCameraControlsPlugin,
-    RtsCameraPlugin,
+    DeltaGrab, Ground, RtsCamera, RtsCameraControls, RtsCameraControlsInputPlugin,
+    RtsCameraControlsPlugin, RtsCameraControlsSystemSet, RtsCameraPlugin,
 };
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
+        // This plugin is used to make things easier, however you could remove it and manually
+        // modify the `RtsCamera.target_*` properties directly if you wish.
         .add_plugins(RtsCameraControlsPlugin)
-        .add_plugins(RtsCameraControlsInputPlugin)
         .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            // Run this before the controls systems otherwise there'll be a 1 frame delay
+            rotate_with_keyboard.before(RtsCameraControlsSystemSet),
+        )
         .run();
 }
 
@@ -97,4 +103,22 @@ fn setup(
             ..default()
         },
     ));
+}
+
+fn rotate_with_keyboard(
+    mut delta_rotate: ResMut<DeltaRotate>,
+    key_input: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
+) {
+    let mut delta = 0.0;
+    let speed = 30.0f32.to_radians(); // 30 degrees/second
+
+    if key_input.pressed(KeyCode::ArrowLeft) {
+        delta -= speed;
+    }
+    if key_input.pressed(KeyCode::ArrowRight) {
+        delta += speed;
+    }
+
+    delta_rotate.delta = delta * time.delta_seconds();
 }

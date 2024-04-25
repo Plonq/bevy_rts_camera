@@ -33,19 +33,23 @@ You can also 'edge pan' by moving the mouse to the edge of the screen.
 
 ## Quick Start
 
+To quickly get started using the built-in controller, add all plugins and components.
+
 Add the plugin:
 
 ```rust ignore
-.add_plugins(RtsCameraPlugin)
+.add_plugins(RtsCameraPlugin)  // Core functionality
+.add_plugins(RtsCameraControlsPlugin)  // Useful utilities for controlling the camera
+.add_plugins(RtsCameraControlsInputPlugin)  // Mapping user input to camera movement
 ```
 
-Add `RtsCamera` to a camera:
+Add `RtsCamera` and `RtsCameraControls` to a camera:
 
 ```rust ignore
 commands.spawn((
     Camera3dBundle::default(),
     RtsCamera::default(),
-    RtsCameraControls::default(),  // Optional
+    RtsCameraControls::default(),
 ));
 ```
 

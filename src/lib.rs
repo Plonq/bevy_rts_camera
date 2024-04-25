@@ -6,10 +6,12 @@ use std::f32::consts::TAU;
 use bevy::math::bounding::Aabb2d;
 use bevy::prelude::*;
 use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
+use bevy_mod_raycast::DefaultRaycastingPlugin;
 
-pub use controller::RtsCameraControls;
-
-use crate::controller::RtsCameraControlsPlugin;
+pub use controller::{
+    DeltaGrab, DeltaPan, DeltaRotate, DeltaZoom, RtsCameraControls, RtsCameraControlsInputPlugin,
+    RtsCameraControlsPlugin, RtsCameraControlsSystemSet,
+};
 
 mod controller;
 
@@ -31,7 +33,7 @@ pub struct RtsCameraPlugin;
 
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RtsCameraControlsPlugin)
+        app.add_plugins(DefaultRaycastingPlugin)
             .add_systems(PreUpdate, initialize)
             .add_systems(
                 Update,
