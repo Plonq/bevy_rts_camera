@@ -76,6 +76,9 @@ pub struct RtsCameraControls {
     /// Speed of camera pan (either via keyboard controls or edge panning).
     /// Defaults to `15.0`.
     pub pan_speed: f32,
+    /// How much the camera will zoom (i.e. the camera zoom sensitivity).
+    /// Defaults to `1.0`.
+    pub zoom_sensitivity: f32,
     /// Whether these controls are enabled.
     /// Defaults to `true`.
     pub enabled: bool,
@@ -95,6 +98,7 @@ impl Default for RtsCameraControls {
             button_drag: None,
             edge_pan_width: 0.05,
             pan_speed: 15.0,
+            zoom_sensitivity: 1.0,
             enabled: true,
         }
     }
@@ -104,7 +108,7 @@ pub fn zoom(
     mut mouse_wheel: EventReader<MouseWheel>,
     mut cam_q: Query<(&mut RtsCamera, &RtsCameraControls)>,
 ) {
-    for (mut cam, _) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
+    for (mut cam, cam_controls) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
         let zoom_amount = mouse_wheel
             .read()
             .map(|event| match event.unit {
@@ -112,7 +116,8 @@ pub fn zoom(
                 MouseScrollUnit::Pixel => event.y * 0.001,
             })
             .fold(0.0, |acc, val| acc + val);
-        let new_zoom = (cam.target_zoom + zoom_amount * 0.5).clamp(0.0, 1.0);
+        let new_zoom =
+            (cam.target_zoom + zoom_amount * 0.5 * cam_controls.zoom_sensitivity).clamp(0.0, 1.0);
         cam.target_zoom = new_zoom;
     }
 }
