@@ -65,7 +65,7 @@ pub struct RtsCameraControls {
     /// Defaults to `0.05` (5%).
     pub edge_pan_width: f32,
     /// Speed of camera pan (either via keyboard controls or edge panning).
-    /// Defaults to `1.0`.
+    /// Defaults to `15.0`.
     pub pan_speed: f32,
     /// Whether these controls are enabled.
     /// Defaults to `true`.
