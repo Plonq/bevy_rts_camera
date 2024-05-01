@@ -232,7 +232,7 @@ fn dynamic_angle(mut query: Query<&mut RtsCamera>) {
     }
 }
 
-fn move_towards_target(mut cam_q: Query<&mut RtsCamera>, time: Res<Time>) {
+fn move_towards_target(mut cam_q: Query<&mut RtsCamera>, time: Res<Time<Real>>) {
     for mut cam in cam_q.iter_mut() {
         cam.focus.translation = cam.focus.translation.lerp(
             cam.target_focus.translation,
