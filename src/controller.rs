@@ -110,7 +110,7 @@ pub fn pan(
     button_input: Res<ButtonInput<KeyCode>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
-    time: Res<Time>,
+    time: Res<Time<Real>>,
 ) {
     for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
         if controller
