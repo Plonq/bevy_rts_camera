@@ -57,6 +57,15 @@ pub struct RtsCameraControls {
     /// The mouse button used to rotate the camera.
     /// Defaults to `MouseButton::Middle`.
     pub button_rotate: MouseButton,
+    /// The key that will rotate the camera left.
+    /// Defaults to `KeyCode::KeyQ`.
+    pub key_rotate_left: KeyCode,
+    /// The key that will rotate the camera right.
+    /// Defaults to `KeyCode::KeyE`.
+    pub key_rotate_right: KeyCode,
+    /// How fast the keys will rotate the camera.
+    /// Defaults to `16.0`.
+    pub key_rotate_speed: f32,
     /// The mouse button used to 'drag pan' the camera.
     /// Defaults to `None`.
     pub button_drag: Option<MouseButton>,
@@ -80,6 +89,9 @@ impl Default for RtsCameraControls {
             key_left: KeyCode::ArrowLeft,
             key_right: KeyCode::ArrowRight,
             button_rotate: MouseButton::Middle,
+            key_rotate_left: KeyCode::KeyQ,
+            key_rotate_right: KeyCode::KeyE,
+            key_rotate_speed: 16.0,
             button_drag: None,
             edge_pan_width: 0.05,
             pan_speed: 15.0,
@@ -243,17 +255,33 @@ pub fn grab_pan(
 pub fn rotate(
     mut cam_q: Query<(&mut RtsCamera, &RtsCameraControls)>,
     mouse_input: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
-        if mouse_input.pressed(controller.button_rotate) {
-            let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
-            if let Ok(primary_window) = primary_window_q.get_single() {
+    if let Ok(primary_window) = primary_window_q.get_single() {
+        for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
+            if mouse_input.pressed(controller.button_rotate) {
+                let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
                 // Adjust based on window size, so that moving mouse entire width of window
                 // will be one half rotation (180 degrees)
                 let delta_x = mouse_delta.x / primary_window.width() * PI;
                 cam.target_focus.rotate_local_y(-delta_x);
+            } else {
+                let left = if keys.pressed(controller.key_rotate_left) {
+                    1.0
+                } else {
+                    0.0
+                };
+                let right = if keys.pressed(controller.key_rotate_right) {
+                    1.0
+                } else {
+                    0.0
+                };
+
+                cam.target_focus.rotate_local_y(
+                    (right - left) / primary_window.width() * PI * controller.key_rotate_speed,
+                );
             }
         }
     }
