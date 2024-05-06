@@ -76,7 +76,7 @@ pub struct RtsCameraControls {
     /// Speed of camera pan (either via keyboard controls or edge panning).
     /// Defaults to `15.0`.
     pub pan_speed: f32,
-    /// How much the camera will zoom (i.e. the camera zoom sensitivity).
+    /// How much the camera will zoom.
     /// Defaults to `1.0`.
     pub zoom_sensitivity: f32,
     /// Whether these controls are enabled.
