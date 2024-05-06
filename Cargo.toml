@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rts_camera"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Plonq"]
 edition = "2021"
 description = "An RTS-style camera for Bevy"
