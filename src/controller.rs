@@ -223,12 +223,10 @@ pub fn grab_pan(
             continue;
         };
 
-        if mouse_button.just_pressed(drag_button) {
-            if controller.lock_on_drag {
-                if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
-                    primary_window.cursor.grab_mode = CursorGrabMode::Locked;
-                    primary_window.cursor.visible = false;
-                }
+        if mouse_button.just_pressed(drag_button) && controller.lock_on_drag {
+            if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
+                primary_window.cursor.grab_mode = CursorGrabMode::Locked;
+                primary_window.cursor.visible = false;
             }
 
             if let Some(cursor_ray) = **cursor_ray {
@@ -289,7 +287,7 @@ pub fn rotate(
 ) {
     if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
         for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
-            if mouse_input.just_pressed(controller.button_rotate) {
+            if mouse_input.just_pressed(controller.button_rotate) && controller.lock_on_rotate {
                 primary_window.cursor.grab_mode = CursorGrabMode::Locked;
                 primary_window.cursor.visible = false;
             }
