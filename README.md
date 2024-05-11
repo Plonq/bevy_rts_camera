@@ -71,7 +71,7 @@ the possible configuration options.
 
 | bevy | bevy_rts_camera |
 |------|-----------------|
-| 0.13 | 0.1-0.6         |
+| 0.13 | 0.1-0.7         |
 
 ## License
 
