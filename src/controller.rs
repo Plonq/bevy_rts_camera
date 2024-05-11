@@ -1,8 +1,10 @@
+#![allow(clippy::too_many_arguments)]
+
 use crate::{Ground, RtsCamera, RtsCameraSystemSet};
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::ButtonInput;
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
+use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy_mod_raycast::immediate::{Raycast, RaycastSettings};
 use bevy_mod_raycast::{CursorRay, DefaultRaycastingPlugin};
 use std::f32::consts::PI;
@@ -66,9 +68,15 @@ pub struct RtsCameraControls {
     /// How fast the keys will rotate the camera.
     /// Defaults to `16.0`.
     pub key_rotate_speed: f32,
+    /// Whether to lock the mouse cursor in place while rotating.
+    /// Defaults to `false`.
+    pub lock_on_rotate: bool,
     /// The mouse button used to 'drag pan' the camera.
     /// Defaults to `None`.
     pub button_drag: Option<MouseButton>,
+    /// Whether to lock the mouse cursor in place while dragging.
+    /// Defaults to `false`.
+    pub lock_on_drag: bool,
     /// How far away from the side of the screen edge pan will kick in, defined as a percentage
     /// of the window's height. Set to `0.0` to disable edge panning.
     /// Defaults to `0.05` (5%).
@@ -95,7 +103,9 @@ impl Default for RtsCameraControls {
             key_rotate_left: KeyCode::KeyQ,
             key_rotate_right: KeyCode::KeyE,
             key_rotate_speed: 16.0,
+            lock_on_rotate: false,
             button_drag: None,
+            lock_on_drag: false,
             edge_pan_width: 0.05,
             pan_speed: 15.0,
             zoom_sensitivity: 1.0,
@@ -204,6 +214,7 @@ pub fn grab_pan(
     cursor_ray: Res<CursorRay>,
     mut ray_hit: Local<Option<Vec3>>,
     ground_q: Query<Entity, With<Ground>>,
+    mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
 ) {
     for (cam_tfm, mut cam, controller, camera, projection) in
         cam_q.iter_mut().filter(|(_, _, ctrl, _, _)| ctrl.enabled)
@@ -213,6 +224,13 @@ pub fn grab_pan(
         };
 
         if mouse_button.just_pressed(drag_button) {
+            if controller.lock_on_drag {
+                if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
+                    primary_window.cursor.grab_mode = CursorGrabMode::Locked;
+                    primary_window.cursor.visible = false;
+                }
+            }
+
             if let Some(cursor_ray) = **cursor_ray {
                 *ray_hit = raycast
                     .cast_ray(
@@ -229,6 +247,11 @@ pub fn grab_pan(
 
         if mouse_button.just_released(drag_button) {
             *ray_hit = None;
+
+            if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
+                primary_window.cursor.grab_mode = CursorGrabMode::None;
+                primary_window.cursor.visible = true;
+            }
         }
 
         if mouse_button.pressed(drag_button) {
@@ -262,10 +285,15 @@ pub fn rotate(
     mouse_input: Res<ButtonInput<MouseButton>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,
-    primary_window_q: Query<&Window, With<PrimaryWindow>>,
+    mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
 ) {
-    if let Ok(primary_window) = primary_window_q.get_single() {
+    if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
         for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
+            if mouse_input.just_pressed(controller.button_rotate) {
+                primary_window.cursor.grab_mode = CursorGrabMode::Locked;
+                primary_window.cursor.visible = false;
+            }
+
             if mouse_input.pressed(controller.button_rotate) {
                 let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
                 // Adjust based on window size, so that moving mouse entire width of window
@@ -287,6 +315,11 @@ pub fn rotate(
                 cam.target_focus.rotate_local_y(
                     (right - left) / primary_window.width() * PI * controller.key_rotate_speed,
                 );
+            }
+
+            if mouse_input.just_released(controller.button_rotate) {
+                primary_window.cursor.grab_mode = CursorGrabMode::None;
+                primary_window.cursor.visible = true;
             }
         }
     }
