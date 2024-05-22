@@ -215,6 +215,7 @@ pub fn grab_pan(
     mut ray_hit: Local<Option<Vec3>>,
     ground_q: Query<Entity, With<Ground>>,
     mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
+    mut previous_mouse_grab_mode: Local<CursorGrabMode>,
 ) {
     for (cam_tfm, mut cam, controller, camera, projection) in
         cam_q.iter_mut().filter(|(_, _, ctrl, _, _)| ctrl.enabled)
@@ -225,6 +226,7 @@ pub fn grab_pan(
 
         if mouse_button.just_pressed(drag_button) && controller.lock_on_drag {
             if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
+                *previous_mouse_grab_mode = primary_window.cursor.grab_mode;
                 primary_window.cursor.grab_mode = CursorGrabMode::Locked;
                 primary_window.cursor.visible = false;
             }
@@ -247,7 +249,7 @@ pub fn grab_pan(
             *ray_hit = None;
 
             if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
-                primary_window.cursor.grab_mode = CursorGrabMode::None;
+                primary_window.cursor.grab_mode = *previous_mouse_grab_mode;
                 primary_window.cursor.visible = true;
             }
         }
@@ -284,10 +286,12 @@ pub fn rotate(
     keys: Res<ButtonInput<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,
     mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
+    mut previous_mouse_grab_mode: Local<CursorGrabMode>,
 ) {
     if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
         for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
             if mouse_input.just_pressed(controller.button_rotate) && controller.lock_on_rotate {
+                *previous_mouse_grab_mode = primary_window.cursor.grab_mode;
                 primary_window.cursor.grab_mode = CursorGrabMode::Locked;
                 primary_window.cursor.visible = false;
             }
@@ -316,7 +320,7 @@ pub fn rotate(
             }
 
             if mouse_input.just_released(controller.button_rotate) {
-                primary_window.cursor.grab_mode = CursorGrabMode::None;
+                primary_window.cursor.grab_mode = *previous_mouse_grab_mode;
                 primary_window.cursor.visible = true;
             }
         }
