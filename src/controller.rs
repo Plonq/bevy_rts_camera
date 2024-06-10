@@ -314,9 +314,12 @@ pub fn rotate(
                     0.0
                 };
 
-                cam.target_focus.rotate_local_y(
-                    (right - left) / primary_window.width() * PI * controller.key_rotate_speed,
-                );
+                let delta = right - left;
+                if delta != 0.0 {
+                    cam.target_focus.rotate_local_y(
+                        delta / primary_window.width() * PI * controller.key_rotate_speed,
+                    );
+                }
             }
 
             if mouse_input.just_released(controller.button_rotate) {
