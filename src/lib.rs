@@ -173,6 +173,16 @@ impl Default for RtsCamera {
     }
 }
 
+impl RtsCamera {
+    /// Sets the camera's position, angle and focus immediately to their current smoothing destination.
+    pub fn reset_smoothing(&mut self) {
+        self.focus.translation = self.target_focus.translation;
+        self.focus.rotation = self.target_focus.rotation;
+        self.zoom = self.target_zoom;
+        self.angle = self.target_angle;
+    }
+}
+
 /// Marks an entity that should be treated as 'ground'. The RTS camera will stay a certain distance
 /// (based on min/max height and zoom) above any meshes marked with this component (using a ray
 /// cast).
