@@ -203,7 +203,7 @@ fn follow_ground(
             cam.target_focus.translation.y + cam.height_max,
             cam.target_focus.translation.z,
         );
-        if let Some(hit1) = cast_ray(&mut raycast, ray_start, Direction3d::NEG_Y, &|entity| {
+        if let Some(hit1) = cast_ray(&mut raycast, ray_start, Dir3::NEG_Y, &|entity| {
             ground_q.get(entity).is_ok()
         }) {
             cam.target_focus.translation.y = hit1.position().y;
@@ -282,7 +282,7 @@ fn update_camera_transform(mut cam_q: Query<(&mut Transform, &RtsCamera)>) {
 fn cast_ray<'a>(
     raycast: &'a mut Raycast<'_, '_>,
     origin: Vec3,
-    dir: Direction3d,
+    dir: Dir3,
     filter: &'a dyn Fn(Entity) -> bool,
 ) -> Option<&'a IntersectionData> {
     let ray1 = Ray3d::new(origin, Vec3::from(dir));
