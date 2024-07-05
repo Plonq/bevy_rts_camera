@@ -186,7 +186,6 @@ fn initialize(mut cam_q: Query<&mut RtsCamera, Added<RtsCamera>>) {
         // Snap to targets when RtsCamera is added. Note that we snap whole transform, not just XZ
         // translation like snap_to system.
         cam.zoom = cam.target_zoom;
-        cam.target_focus.translation.y = cam.height_max.lerp(cam.height_min, cam.zoom);
         cam.focus = cam.target_focus;
         cam.angle = cam.min_angle;
         cam.target_angle = cam.min_angle;
