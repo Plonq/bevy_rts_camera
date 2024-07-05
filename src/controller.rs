@@ -6,14 +6,14 @@ use bevy::input::ButtonInput;
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy_mod_raycast::immediate::{Raycast, RaycastSettings};
-use bevy_mod_raycast::{CursorRay, DefaultRaycastingPlugin};
+use bevy_mod_raycast::prelude::{CursorRay, CursorRayPlugin};
 use std::f32::consts::PI;
 
 pub struct RtsCameraControlsPlugin;
 
 impl Plugin for RtsCameraControlsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DefaultRaycastingPlugin).add_systems(
+        app.add_plugins(CursorRayPlugin).add_systems(
             Update,
             (zoom, pan, grab_pan, rotate).before(RtsCameraSystemSet),
         );
