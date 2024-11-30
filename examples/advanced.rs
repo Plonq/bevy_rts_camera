@@ -126,7 +126,7 @@ Press T to toggle controls (K and L will still work)",
             // Keep the mouse cursor in place when rotating
             lock_on_rotate: true,
             // Drag pan with middle click
-            button_drag: Some(MouseButton::Left),
+            button_drag: Some(MouseButton::Middle),
             // Keep the mouse cursor in place when dragging
             lock_on_drag: true,
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
