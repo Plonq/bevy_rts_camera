@@ -4,8 +4,8 @@
 use std::f32::consts::TAU;
 
 use bevy::math::bounding::Aabb2d;
+use bevy::picking::mesh_picking::ray_cast::RayMeshHit;
 use bevy::prelude::*;
-use bevy_mod_raycast::prelude::{IntersectionData, Raycast, RaycastSettings};
 
 pub use controller::RtsCameraControls;
 
@@ -205,7 +205,7 @@ fn initialize(mut cam_q: Query<&mut RtsCamera, Added<RtsCamera>>) {
 fn follow_ground(
     mut cam_q: Query<&mut RtsCamera>,
     ground_q: Query<Entity, With<Ground>>,
-    mut raycast: Raycast,
+    mut ray_cast: MeshRayCast,
 ) {
     for mut cam in cam_q.iter_mut() {
         let ray_start = Vec3::new(
@@ -213,10 +213,10 @@ fn follow_ground(
             cam.target_focus.translation.y + cam.height_max,
             cam.target_focus.translation.z,
         );
-        if let Some(hit1) = cast_ray(&mut raycast, ray_start, Dir3::NEG_Y, &|entity| {
+        if let Some(hit1) = cast_ray(ray_start, Dir3::NEG_Y, &mut ray_cast, &|entity| {
             ground_q.get(entity).is_ok()
         }) {
-            cam.target_focus.translation.y = hit1.position().y;
+            cam.target_focus.translation.y = hit1.point.y;
         }
     }
 }
@@ -245,19 +245,19 @@ fn move_towards_target(mut cam_q: Query<&mut RtsCamera>, time: Res<Time<Real>>) 
     for mut cam in cam_q.iter_mut() {
         cam.focus.translation = cam.focus.translation.lerp(
             cam.target_focus.translation,
-            1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
+            1.0 - cam.smoothness.powi(7).powf(time.delta_secs()),
         );
         cam.focus.rotation = cam.focus.rotation.lerp(
             cam.target_focus.rotation,
-            1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
+            1.0 - cam.smoothness.powi(7).powf(time.delta_secs()),
         );
         cam.zoom = cam.zoom.lerp(
             cam.target_zoom,
-            1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
+            1.0 - cam.smoothness.powi(7).powf(time.delta_secs()),
         );
         cam.angle = cam.angle.lerp(
             cam.target_angle,
-            1.0 - cam.smoothness.powi(7).powf(time.delta_seconds()),
+            1.0 - cam.smoothness.powi(7).powf(time.delta_secs()),
         );
     }
 }
@@ -290,15 +290,15 @@ fn update_camera_transform(mut cam_q: Query<(&mut Transform, &RtsCamera)>) {
 }
 
 fn cast_ray<'a>(
-    raycast: &'a mut Raycast<'_, '_>,
     origin: Vec3,
     dir: Dir3,
+    ray_cast: &'a mut MeshRayCast<'_, '_>,
     filter: &'a dyn Fn(Entity) -> bool,
-) -> Option<&'a IntersectionData> {
-    let ray1 = Ray3d::new(origin, Vec3::from(dir));
-    let hits1 = raycast.cast_ray(
+) -> Option<&'a RayMeshHit> {
+    let ray1 = Ray3d::new(origin, dir);
+    let hits1 = ray_cast.cast_ray(
         ray1,
-        &RaycastSettings {
+        &RayCastSettings {
             filter,
             ..default()
         },

@@ -31,96 +31,73 @@ fn setup(
 ) {
     // Ground
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(80.0, 80.0)),
-            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
-            ..default()
-        },
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(80.0, 80.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.5, 0.3))),
         // Add `Ground` component to any entity you want the camera to treat as ground.
         Ground,
     ));
     // Some "terrain"
     let terrain_material = materials.add(Color::srgb(0.8, 0.7, 0.6));
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Cuboid::new(15.0, 1.0, 5.0)),
-            material: terrain_material.clone(),
-            transform: Transform::from_xyz(15.0, 0.5, -5.0),
-            ..default()
-        },
+        Mesh3d(meshes.add(Cuboid::new(15.0, 1.0, 5.0))),
+        MeshMaterial3d(terrain_material.clone()),
+        Transform::from_xyz(15.0, 0.5, -5.0),
         Ground,
     ));
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Cuboid::new(10.0, 5.0, 15.0)),
-            material: terrain_material.clone(),
-            transform: Transform::from_xyz(-15.0, 2.5, 0.0),
-            ..default()
-        },
+        Mesh3d(meshes.add(Cuboid::new(10.0, 5.0, 15.0))),
+        MeshMaterial3d(terrain_material.clone()),
+        Transform::from_xyz(-15.0, 2.5, 0.0),
         Ground,
     ));
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Sphere::new(12.5)),
-            material: terrain_material.clone(),
-            transform: Transform::from_xyz(0.0, 0.0, -23.0),
-            ..default()
-        },
+        Mesh3d(meshes.add(Sphere::new(12.5))),
+        MeshMaterial3d(terrain_material.clone()),
+        Transform::from_xyz(0.0, 0.0, -23.0),
         Ground,
     ));
     // Some generic units that are not part of the 'Ground' (ignored for height calculation)
     for x in -5..5 {
         for z in -5..5 {
-            commands.spawn(PbrBundle {
-                mesh: meshes.add(Capsule3d::new(0.25, 1.25)),
-                material: terrain_material.clone(),
-                transform: Transform::from_xyz(x as f32 * 0.7, 0.75, z as f32 * 0.7),
-                ..default()
-            });
+            commands.spawn((
+                Mesh3d(meshes.add(Capsule3d::new(0.25, 1.25))),
+                MeshMaterial3d(terrain_material.clone()),
+                Transform::from_xyz(x as f32 * 0.7, 0.75, z as f32 * 0.7),
+            ));
         }
     }
     // A moving unit that can be locked onto
     commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Capsule3d::new(0.25, 1.25)),
-            material: terrain_material.clone(),
-            transform: Transform::from_xyz(0.0, 0.75, 0.0),
-            ..default()
-        })
+        .spawn((
+            Mesh3d(meshes.add(Capsule3d::new(0.25, 1.25))),
+            MeshMaterial3d(terrain_material.clone()),
+            Transform::from_xyz(0.0, 0.75, 0.0),
+        ))
         .insert(Move);
     // Light
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
+    commands.spawn((
+        DirectionalLight {
             illuminance: 1000.0,
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_rotation(Quat::from_euler(
+        Transform::from_rotation(Quat::from_euler(
             EulerRot::YXZ,
             150.0f32.to_radians(),
             -40.0f32.to_radians(),
             0.0,
         )),
-        ..default()
-    });
+    ));
     // Help text
-    commands.spawn(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: "\
+    commands.spawn(Text::new(
+        "\
 Press K to jump to the moving unit
 Hold L to lock onto the moving unit
-Press T to toggle controls (K and L will still work)"
-                    .to_string(),
-                ..Default::default()
-            }],
-            ..Default::default()
-        },
-        ..default()
-    });
+Press T to toggle controls (K and L will still work)",
+    ));
     // Camera
     commands.spawn((
-        Camera3dBundle::default(),
+        Camera3d::default(),
         RtsCamera {
             // Increase min height (decrease max zoom)
             // height_min: 10.0,
@@ -149,7 +126,7 @@ Press T to toggle controls (K and L will still work)"
             // Keep the mouse cursor in place when rotating
             lock_on_rotate: true,
             // Drag pan with middle click
-            button_drag: Some(MouseButton::Middle),
+            button_drag: Some(MouseButton::Left),
             // Keep the mouse cursor in place when dragging
             lock_on_drag: true,
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
@@ -169,7 +146,7 @@ fn move_unit(
 ) {
     if let Ok(mut cube_tfm) = cube_q.get_single_mut() {
         // Rotate 20 degrees a second, wrapping around to 0 after a full rotation
-        *angle += 20f32.to_radians() * time.delta_seconds() % TAU;
+        *angle += 20f32.to_radians() * time.delta_secs() % TAU;
         // Convert angle to position
         let pos = Vec3::new(angle.sin() * 7.5, 0.75, angle.cos() * 7.5);
         cube_tfm.translation = pos;
