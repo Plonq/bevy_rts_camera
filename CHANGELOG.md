@@ -2,6 +2,10 @@
 
 - Update to Bevy 0.15
 
+## 0.8.1
+
+- Adds a `reset_smoothing` method to `RtsCamera`
+
 ## 0.8
 
 - Update to Bevy 0.14
