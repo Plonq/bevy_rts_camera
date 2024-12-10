@@ -97,7 +97,6 @@ Press T to toggle controls (K and L will still work)",
     ));
     // Camera
     commands.spawn((
-        Camera3d::default(),
         RtsCamera {
             // Increase min height (decrease max zoom)
             // height_min: 10.0,

@@ -70,9 +70,5 @@ fn setup(
         )),
     ));
     // Camera
-    commands.spawn((
-        Camera3d::default(),
-        RtsCamera::default(),
-        RtsCameraControls::default(),
-    ));
+    commands.spawn((RtsCamera::default(), RtsCameraControls::default()));
 }

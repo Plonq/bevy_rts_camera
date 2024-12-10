@@ -57,7 +57,6 @@ pub struct RtsCameraSystemSet;
 
 /// Marks a camera to be used as an RTS camera.
 /// Only one instance of this component should exist at any given moment.
-/// Typically you'll add this alongside a `Camera3dBundle`.
 /// This does not include a controller. Add `RtsCameraControls` as well if you want.
 /// # Example
 /// ```no_run
@@ -73,12 +72,12 @@ pub struct RtsCameraSystemSet;
 /// fn setup(mut commands: Commands) {
 ///     commands
 ///         .spawn((
-///             Camera3dBundle::default(),
 ///             RtsCamera::default(),
 ///         ));
 ///  }
 /// ```
 #[derive(Component, Copy, Clone, Debug)]
+#[require(Camera3d)]
 pub struct RtsCamera {
     /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.
     /// Should be set to a value that avoids clipping.

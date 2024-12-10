@@ -13,7 +13,13 @@ readme = "README.md"
 exclude = ["assets/"]
 
 [dependencies]
-bevy = { version = "0.15", default-features = false, features = ["bevy_render", "bevy_window", "bevy_picking", "bevy_mesh_picking_backend"] }
+bevy = { version = "0.15", default-features = false, features = [
+    "bevy_core_pipeline",
+    "bevy_render",
+    "bevy_window",
+    "bevy_picking",
+    "bevy_mesh_picking_backend",
+] }
 
 [dev-dependencies]
 bevy = { version = "0.15" }

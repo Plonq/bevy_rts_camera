@@ -39,11 +39,10 @@ Add the plugin:
 .add_plugins(RtsCameraPlugin)
 ```
 
-Add `RtsCamera` to a camera:
+Add `RtsCamera` (this will automatically add a `Camera3d` but you can add it manually if necessary):
 
 ```rust ignore
 commands.spawn((
-    Camera3dBundle::default(),
     RtsCamera::default(),
     RtsCameraControls::default(),  // Optional
 ));

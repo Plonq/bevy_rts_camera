@@ -34,7 +34,6 @@ impl Plugin for RtsCameraControlsPlugin {
 /// fn setup(mut commands: Commands) {
 ///     commands
 ///         .spawn((
-///             Camera3dBundle::default(),
 ///             RtsCamera::default(),
 ///             RtsCameraControls::default(),
 ///         ));
