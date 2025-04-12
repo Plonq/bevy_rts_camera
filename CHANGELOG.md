@@ -1,3 +1,7 @@
+## 0.9.2
+
+- Fixes bug with bounds calculation, causing incorrect behaviour when bounds are asymmetrical (#30)
+
 ## 0.9.1
 
 - Add `Camera3d` as a required component (new feature of Bevy 0.15) of `RtsCamera`, so you don't have to add it manually
