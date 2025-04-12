@@ -139,7 +139,7 @@ pub fn pan(
     for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
         if controller
             .button_drag
-            .map_or(false, |btn| mouse_input.pressed(btn))
+            .is_some_and(|btn| mouse_input.pressed(btn))
         {
             continue;
         }
