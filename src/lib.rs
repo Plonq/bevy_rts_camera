@@ -40,7 +40,7 @@ impl Plugin for RtsCameraPlugin {
                     snap_to_target,
                     dynamic_angle,
                     move_towards_target,
-                    apply_bounds,
+                    apply_camera_bounds,
                     update_camera_transform,
                 )
                     .chain()
@@ -261,18 +261,22 @@ fn move_towards_target(mut cam_q: Query<&mut RtsCamera>, time: Res<Time<Real>>) 
     }
 }
 
-fn apply_bounds(mut cam_q: Query<&mut RtsCamera>) {
+/// Constrains a 3D position to lie within the specified 2D axis-aligned
+/// bounding box (AABB).
+///
+/// This function ensures that the X and Z coordinates of the given 3D position
+/// are clamped to the bounds of the provided [`Aabb2d`]. The Y coordinate
+/// remains unchanged, as the bounds only apply to the XZ plane.
+#[inline(always)]
+fn apply_bounds(bounds: &Aabb2d, position: Vec3) -> Vec3 {
+    let closest_point = bounds.closest_point(Vec2::new(position.x, position.z));
+
+    Vec3::new(closest_point.x, position.y, closest_point.y)
+}
+
+fn apply_camera_bounds(mut cam_q: Query<&mut RtsCamera>) {
     for mut cam in cam_q.iter_mut() {
-        let closest_point = cam.bounds.closest_point(Vec2::new(
-            cam.target_focus.translation.x,
-            -cam.target_focus.translation.z,
-        ));
-        let closest_point = Vec3::new(
-            closest_point.x,
-            cam.target_focus.translation.y,
-            -closest_point.y,
-        );
-        cam.target_focus.translation = closest_point;
+        cam.target_focus.translation = apply_bounds(&cam.bounds, cam.target_focus.translation);
     }
 }
 
@@ -307,4 +311,63 @@ fn cast_ray<'a>(
 
 fn ease_in_circular(x: f32) -> f32 {
     1.0 - (1.0 - x.powi(2)).sqrt()
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::math::bounding::Aabb2d;
+
+    use super::*;
+
+    #[test]
+    fn test_symmetric_bounds() {
+        // Default bounds with zero center, i.e., symmetric around origin.
+        let bounds = Aabb2d::new(Vec2::ZERO, Vec2::new(20.0, 20.0));
+
+        // Position at center should remain unchanged.
+        let center_pos = Vec3::new(0.0, 0.0, 0.0);
+        assert_eq!(apply_bounds(&bounds, center_pos), center_pos);
+
+        // Position at edge should remain unchanged.
+        let edge_pos = Vec3::new(20.0, 0.0, 20.0);
+        assert_eq!(apply_bounds(&bounds, edge_pos), edge_pos);
+
+        // Position inside bounds should remain unchanged.
+        let in_bounds_pos = Vec3::new(15.0, 0.0, 15.0);
+        assert_eq!(apply_bounds(&bounds, in_bounds_pos), in_bounds_pos);
+
+        // Position outside bounds should be clamped.
+        let out_of_bounds_pos = Vec3::new(25.0, 0.0, 25.0);
+        assert_eq!(
+            apply_bounds(&bounds, out_of_bounds_pos),
+            Vec3::new(20.0, 0.0, 20.0)
+        );
+    }
+
+    #[test]
+    fn test_asymmetric_bounds() {
+        // Bounds with non-zero center, i.e., asymmetric relative to origin.
+        //
+        // Effective bounds: x: [10, 190], z: [-10, 190].
+        let bounds = Aabb2d::new(Vec2::new(100.0, 90.0), Vec2::new(90.0, 100.0));
+
+        // Position at center should remain unchanged.
+        let center_pos = Vec3::new(100.0, 0.0, 90.0);
+        assert_eq!(apply_bounds(&bounds, center_pos), center_pos);
+
+        // Position at edge should remain unchanged.
+        let edge_pos = Vec3::new(190.0, 0.0, 190.0);
+        assert_eq!(apply_bounds(&bounds, edge_pos), edge_pos);
+
+        // Position inside bounds should remain unchanged.
+        let in_bounds_pos = Vec3::new(150.0, 0.0, 100.0);
+        assert_eq!(apply_bounds(&bounds, in_bounds_pos), in_bounds_pos);
+
+        // Position outside bounds should be clamped
+        let out_of_bounds_pos = Vec3::new(200.0, 0.0, 200.0); // beyond edge
+        assert_eq!(
+            apply_bounds(&bounds, out_of_bounds_pos),
+            Vec3::new(190.0, 0.0, 190.0)
+        );
+    }
 }
