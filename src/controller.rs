@@ -162,7 +162,7 @@ pub fn pan(
 
         // Edge pan
         if delta.length_squared() == 0.0 && !mouse_input.pressed(controller.button_rotate) {
-            if let Ok(primary_window) = primary_window_q.get_single() {
+            if let Ok(primary_window) = primary_window_q.single() {
                 if let Some(cursor_position) = primary_window.cursor_position() {
                     let win_w = primary_window.width();
                     let win_h = primary_window.height();
@@ -221,7 +221,7 @@ pub fn grab_pan(
         let Some(drag_button) = controller.button_drag else {
             continue;
         };
-        let Ok(mut primary_window) = primary_window_q.get_single_mut() else {
+        let Ok(mut primary_window) = primary_window_q.single_mut() else {
             return;
         };
 
@@ -238,7 +238,7 @@ pub fn grab_pan(
                 *ray_hit = ray_cast
                     .cast_ray(
                         cursor_ray,
-                        &RayCastSettings {
+                        &MeshRayCastSettings {
                             filter: &|entity| ground_q.get(entity).is_ok(),
                             ..default()
                         },
@@ -271,6 +271,7 @@ pub fn grab_pan(
                 Projection::Orthographic(ref p) => {
                     mouse_delta *= Vec2::new(p.area.width(), p.area.height()) / vp_size;
                 }
+                Projection::Custom(ref _p) => todo!(),
             }
 
             let mut delta = Vec3::ZERO;
@@ -289,7 +290,7 @@ pub fn rotate(
     mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
     mut previous_mouse_grab_mode: Local<CursorGrabMode>,
 ) {
-    if let Ok(mut primary_window) = primary_window_q.get_single_mut() {
+    if let Ok(mut primary_window) = primary_window_q.single_mut() {
         for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
             if mouse_input.just_pressed(controller.button_rotate) && controller.lock_on_rotate {
                 *previous_mouse_grab_mode = primary_window.cursor_options.grab_mode;

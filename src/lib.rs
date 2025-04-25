@@ -301,7 +301,7 @@ fn cast_ray<'a>(
     let ray1 = Ray3d::new(origin, dir);
     let hits1 = ray_cast.cast_ray(
         ray1,
-        &RayCastSettings {
+        &MeshRayCastSettings {
             filter,
             ..default()
         },
