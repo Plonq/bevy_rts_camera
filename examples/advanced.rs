@@ -143,7 +143,7 @@ fn move_unit(
     mut cube_q: Query<&mut Transform, With<Move>>,
     mut angle: Local<f32>,
 ) {
-    if let Ok(mut cube_tfm) = cube_q.get_single_mut() {
+    if let Ok(mut cube_tfm) = cube_q.single_mut() {
         // Rotate 20 degrees a second, wrapping around to 0 after a full rotation
         *angle += 20f32.to_radians() * time.delta_secs() % TAU;
         // Convert angle to position
