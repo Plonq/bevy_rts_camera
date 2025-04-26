@@ -1,3 +1,7 @@
+## 0.10
+
+- Update to Bevy 0.16
+
 ## 0.9.2
 
 - Fixes bug with bounds calculation, causing incorrect behaviour when bounds are asymmetrical (#30)
