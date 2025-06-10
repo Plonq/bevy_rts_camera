@@ -142,7 +142,7 @@ Press T to toggle controls (K and L will still work)",
             // Rotate
             // Rotate with Mouse
             .with(RtsCameraAction::RotateMode, MouseButton::Right)
-            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
             // Rotate with Button
             .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
             .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)

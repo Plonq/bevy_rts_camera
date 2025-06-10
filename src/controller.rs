@@ -18,12 +18,12 @@ impl Plugin for RtsCameraControlsPlugin {
     }
 }
 
-/// Define all possible action that a RtsCamera can perform.
+/// Define all possible action that a `RtsCamera` can perform.
 ///
 /// # used [leafwing-input-manager](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main)
 ///
 /// ## Modes
-/// There are three mode for the RtsCamera
+/// There are three mode for the `RtsCamera`
 /// - ### Normal Mode:
 ///     In normal mode, the user can use:
 ///     - `Pan` action to move the camera target on the XZ plane
@@ -35,7 +35,7 @@ impl Plugin for RtsCameraControlsPlugin {
 ///     
 ///     User can enter this mode by `RotateMode` action, a typical usage of this mode should be,
 ///     use a certain key to enter rotate mode, and some other axis to rotate
-///     ```rust
+///     ```no_run
 ///     InputMap::default()
 ///        .with(RtsCameraAction::RotateMode, MouseButton::Right)
 ///        .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
@@ -45,8 +45,8 @@ impl Plugin for RtsCameraControlsPlugin {
 ///     this is used for taking mouse action, but it can also use other axis input.
 ///     
 ///     User can enter this mode by `GrabMode` action, a typical usage of this mode should be,
-///     use a certain key to enter grab mode, and some other axis to rotate
-///     ```rust
+///     use a certain key to enter grab mode, and some other axis to move
+///     ```no_run
 ///     InputMap::default()
 ///         .with(RtsCameraAction::GrabMode, MouseButton::Middle)
 ///         .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
@@ -66,7 +66,7 @@ pub enum RtsCameraAction {
     /// `AxisLike` action for rotating around the camera's target in rotation mode
     #[actionlike(Axis)]
     RotateAxis,
-    /// `ButtonLike` action for rotating around  the camera's origin
+    /// `ButtonLike` action for rotating around the camera's origin
     Rotate(bool),
 
     // Grab
@@ -79,7 +79,7 @@ pub enum RtsCameraAction {
 
 impl RtsCameraAction {
     /// A minimal input map
-    /// ```rust
+    /// ```no_run
     /// InputMap::default()
     ///     // Pan Action
     ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
@@ -87,7 +87,7 @@ impl RtsCameraAction {
     ///     .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
     ///     // Rotate
     ///     .with(RtsCameraAction::RotateMode, MouseButton::Right)
-    ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+    ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
     /// ```
     pub fn minimal_input_map() -> InputMap<RtsCameraAction> {
         InputMap::default()
@@ -97,10 +97,10 @@ impl RtsCameraAction {
             .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
             // Rotate
             .with(RtsCameraAction::RotateMode, MouseButton::Right)
-            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
     }
     /// A fully featured input map
-    /// ```rust
+    /// ```no_run
     /// InputMap::default()
     ///     // Pan Action
     ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
@@ -114,7 +114,7 @@ impl RtsCameraAction {
     ///     .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
     ///     // Rotate
     ///     .with(RtsCameraAction::RotateMode, MouseButton::Right)
-    ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+    ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
     ///     .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
     ///     .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
     ///     // Grab
@@ -135,7 +135,7 @@ impl RtsCameraAction {
             .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
             // Rotate
             .with(RtsCameraAction::RotateMode, MouseButton::Right)
-            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
             .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
             .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
             // Grab
@@ -422,14 +422,17 @@ pub fn rotate(
                 };
                 let value = axis_data.value / primary_window.width() * PI;
                 cam.target_focus.rotate_local_y(value);
-            } else if action_state.pressed(&RtsCameraAction::Rotate(true)) {
-                cam.target_focus.rotate_local_y(
-                    1.0 / primary_window.width() * PI * controller.key_rotate_speed,
-                );
-            } else if action_state.pressed(&RtsCameraAction::Rotate(false)) {
-                cam.target_focus.rotate_local_y(
-                    -1.0 / primary_window.width() * PI * controller.key_rotate_speed,
-                );
+            } else {
+                if action_state.pressed(&RtsCameraAction::Rotate(true)) {
+                    cam.target_focus.rotate_local_y(
+                        1.0 / primary_window.width() * PI * controller.key_rotate_speed,
+                    );
+                }
+                if action_state.pressed(&RtsCameraAction::Rotate(false)) {
+                    cam.target_focus.rotate_local_y(
+                        -1.0 / primary_window.width() * PI * controller.key_rotate_speed,
+                    );
+                }
             }
 
             if action_state.just_released(&RtsCameraAction::RotateMode) {
