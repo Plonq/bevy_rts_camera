@@ -115,23 +115,14 @@ Press T to toggle controls (K and L will still work)",
             ..default()
         },
         RtsCameraControls {
-            // Change pan controls to WASD
-            key_up: KeyCode::KeyW,
-            key_down: KeyCode::KeyS,
-            key_left: KeyCode::KeyA,
-            key_right: KeyCode::KeyD,
-            // Rotate the camera with right click
-            button_rotate: MouseButton::Right,
             // Keep the mouse cursor in place when rotating
             lock_on_rotate: true,
             // Drag pan with middle click
-            button_drag: Some(MouseButton::Middle),
+            // button_drag: Some(MouseButton::Middle),
             // Keep the mouse cursor in place when dragging
             lock_on_drag: true,
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
             edge_pan_width: 0.1,
-            // Increase pan speed
-            pan_speed: 25.0,
             ..default()
         },
     ));

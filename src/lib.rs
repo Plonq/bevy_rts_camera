@@ -7,7 +7,9 @@ use bevy::math::bounding::Aabb2d;
 use bevy::picking::mesh_picking::ray_cast::RayMeshHit;
 use bevy::prelude::*;
 
-pub use controller::RtsCameraControls;
+use leafwing_input_manager::prelude::*;
+
+pub use controller::*;
 
 use crate::controller::RtsCameraControlsPlugin;
 
@@ -32,6 +34,7 @@ pub struct RtsCameraPlugin;
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RtsCameraControlsPlugin)
+            // .add_plugins(InputManagerPlugin::<RtsCameraAction>::default())
             .add_systems(PreUpdate, initialize)
             .add_systems(
                 Update,
@@ -76,7 +79,7 @@ pub struct RtsCameraSystemSet;
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Copy, Clone, Debug)]
+#[derive(Component, Clone, Debug)]
 #[require(Camera3d)]
 pub struct RtsCamera {
     /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.
