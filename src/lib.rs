@@ -7,8 +7,6 @@ use bevy::math::bounding::Aabb2d;
 use bevy::picking::mesh_picking::ray_cast::RayMeshHit;
 use bevy::prelude::*;
 
-use leafwing_input_manager::prelude::*;
-
 pub use controller::*;
 
 use crate::controller::RtsCameraControlsPlugin;

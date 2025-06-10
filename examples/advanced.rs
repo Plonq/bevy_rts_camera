@@ -5,7 +5,10 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
-use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin, RtsCameraSystemSet};
+use bevy_rts_camera::{
+    Ground, RtsCamera, RtsCameraAction, RtsCameraControls, RtsCameraPlugin, RtsCameraSystemSet,
+};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()
@@ -125,6 +128,30 @@ Press T to toggle controls (K and L will still work)",
             edge_pan_width: 0.1,
             ..default()
         },
+        InputMap::default()
+            // Pan Action
+            // you can add multiple dual axis
+            .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
+            .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
+            .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::action_pad())
+            // Zoom Action
+            // you can create your own axis
+            .with_axis(
+                RtsCameraAction::ZoomAxis,
+                VirtualAxis::new(KeyCode::KeyE, KeyCode::KeyQ),
+            )
+            .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
+            // Rotate
+            // Rotate with Mouse
+            .with(RtsCameraAction::RotateMode, MouseButton::Right)
+            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+            // Rotate with Button
+            .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
+            .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
+            // Grab
+            // Grab with Mouse
+            .with(RtsCameraAction::GrabMode, MouseButton::Middle)
+            .with_dual_axis(RtsCameraAction::Grab, MouseMove::default()),
     ));
 }
 

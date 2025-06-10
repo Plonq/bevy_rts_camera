@@ -23,12 +23,13 @@ pub enum RtsCameraAction {
     #[actionlike(DualAxis)]
     Pan,
     #[actionlike(Axis)]
-    Zoom,
+    ZoomAxis,
 
     // Rotate
     RotateMode,
     #[actionlike(Axis)]
-    Rotate,
+    RotateAxis,
+    Rotate(bool),
 
     // Grab
     GrabMode,
@@ -45,13 +46,15 @@ impl RtsCameraAction {
             .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::action_pad())
             // Zoom Action
             .with_axis(
-                RtsCameraAction::Zoom,
+                RtsCameraAction::ZoomAxis,
                 VirtualAxis::new(KeyCode::KeyE, KeyCode::KeyQ),
             )
-            .with_axis(RtsCameraAction::Zoom, MouseScrollAxis::Y)
+            .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
             // Rotate
             .with(RtsCameraAction::RotateMode, MouseButton::Right)
-            .with_axis(RtsCameraAction::Rotate, MouseMoveAxis::X)
+            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+            .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
+            .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
             // Grab
             .with(RtsCameraAction::GrabMode, MouseButton::Middle)
             .with_dual_axis(RtsCameraAction::Grab, MouseMove::default())
@@ -81,6 +84,9 @@ impl RtsCameraAction {
 /// ```
 #[derive(Component, Debug, PartialEq, Clone)]
 pub struct RtsCameraControls {
+    /// How fast the keys will rotate the camera.
+    /// Defaults to `16.0`.
+    pub key_rotate_speed: f32,
     /// Whether to lock the mouse cursor in place while rotating.
     /// Defaults to `false`.
     pub lock_on_rotate: bool,
@@ -94,18 +100,31 @@ pub struct RtsCameraControls {
     /// of the window's height. Set to `0.0` to disable edge panning.
     /// Defaults to `0.05` (5%).
     pub edge_pan_width: f32,
+    /// Speed of camera pan (either via keyboard controls or edge panning).
+    /// Defaults to `15.0`.
+    pub pan_speed: f32,
+    /// How much the camera will zoom.
+    /// Defaults to `1.0`.
+    pub zoom_sensitivity: f32,
     /// Whether these controls are enabled.
     /// Defaults to `true`.
     pub enabled: bool,
+    pub grab_mode: bool,
+    pub rotate_mode: bool,
 }
 
 impl Default for RtsCameraControls {
     fn default() -> Self {
         RtsCameraControls {
+            key_rotate_speed: 16.0,
             lock_on_rotate: false,
             lock_on_drag: false,
             edge_pan_width: 0.05,
+            pan_speed: 15.0,
+            zoom_sensitivity: 1.0,
             enabled: true,
+            grab_mode: false,
+            rotate_mode: false,
         }
     }
 }
@@ -117,14 +136,14 @@ pub fn zoom(
         &ActionState<RtsCameraAction>,
     )>,
 ) {
-    for (mut cam, cam_controls, action_state) in
-        cam_q.iter_mut().filter(|(_, ctrl, _)| ctrl.enabled)
+    for (mut cam, controller, action_state) in cam_q.iter_mut().filter(|(_, ctrl, _)| ctrl.enabled)
     {
-        let Some(axis_data) = action_state.axis_data(&RtsCameraAction::Zoom) else {
+        let Some(axis_data) = action_state.axis_data(&RtsCameraAction::ZoomAxis) else {
             continue;
         };
         let zoom_amount = axis_data.value;
-        let new_zoom = (cam.target_zoom + zoom_amount * 0.5).clamp(0.0, 1.0);
+        let new_zoom =
+            (cam.target_zoom + zoom_amount * 0.5 * controller.zoom_sensitivity).clamp(0.0, 1.0);
         cam.target_zoom = new_zoom;
     }
 }
@@ -142,45 +161,50 @@ pub fn pan(
     {
         if action_state.pressed(&RtsCameraAction::GrabMode)
             | action_state.pressed(&RtsCameraAction::RotateMode)
+            | controller.grab_mode
+            | controller.rotate_mode
         {
             continue;
         }
 
-        let pan = action_state.axis_pair(&RtsCameraAction::Pan);
+        let mut delta = Vec3::ZERO;
 
-        let delta = Vec3::from(cam.target_focus.forward()) * pan.y
-            + Vec3::from(cam.target_focus.left()) * -pan.x;
+        if let Some(pan) = action_state.dual_axis_data(&RtsCameraAction::Pan) {
+            delta = Vec3::from(cam.target_focus.forward()) * pan.pair.y
+                + Vec3::from(cam.target_focus.left()) * -pan.pair.x;
+        }
 
-        // // Edge pan
-        // if delta.length_squared() == 0.0 && !mouse_input.pressed(controller.button_rotate) {
-        //     if let Ok(primary_window) = primary_window_q.single() {
-        //         if let Some(cursor_position) = primary_window.cursor_position() {
-        //             let win_w = primary_window.width();
-        //             let win_h = primary_window.height();
-        //             let pan_width = win_h * controller.edge_pan_width;
-        //             // Pan left
-        //             if cursor_position.x < pan_width {
-        //                 delta += Vec3::from(cam.target_focus.left())
-        //             }
-        //             // Pan right
-        //             if cursor_position.x > win_w - pan_width {
-        //                 delta += Vec3::from(cam.target_focus.right())
-        //             }
-        //             // Pan up
-        //             if cursor_position.y < pan_width {
-        //                 delta += Vec3::from(cam.target_focus.forward())
-        //             }
-        //             // Pan down
-        //             if cursor_position.y > win_h - pan_width {
-        //                 delta += Vec3::from(cam.target_focus.back())
-        //             }
-        //         }
-        //     }
-        // }
+        if delta.length_squared() == 0.0 {
+            // // Edge pan
+            if let Ok(primary_window) = primary_window_q.single() {
+                if let Some(cursor_position) = primary_window.cursor_position() {
+                    let win_w = primary_window.width();
+                    let win_h = primary_window.height();
+                    let pan_width = win_h * controller.edge_pan_width;
+                    // Pan left
+                    if cursor_position.x < pan_width {
+                        delta += Vec3::from(cam.target_focus.left())
+                    }
+                    // Pan right
+                    if cursor_position.x > win_w - pan_width {
+                        delta += Vec3::from(cam.target_focus.right())
+                    }
+                    // Pan up
+                    if cursor_position.y < pan_width {
+                        delta += Vec3::from(cam.target_focus.forward())
+                    }
+                    // Pan down
+                    if cursor_position.y > win_h - pan_width {
+                        delta += Vec3::from(cam.target_focus.back())
+                    }
+                }
+            }
+        }
 
         let new_target = cam.target_focus.translation
             + delta.normalize_or_zero()
             * time.delta_secs()
+            * controller.pan_speed
             // Scale based on zoom so it (roughly) feels the same speed at different zoom levels
             * cam.target_zoom.remap(0.0, 1.0, 1.0, 0.5);
         cam.target_focus.translation = new_target;
@@ -192,7 +216,7 @@ pub fn grab_pan(
         &Transform,
         &GlobalTransform,
         &mut RtsCamera,
-        &RtsCameraControls,
+        &mut RtsCameraControls,
         &Camera,
         &Projection,
         &ActionState<RtsCameraAction>,
@@ -203,11 +227,11 @@ pub fn grab_pan(
     mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
     mut previous_mouse_grab_mode: Local<CursorGrabMode>,
 ) {
-    for (cam_tfm, cam_gtfm, mut cam, controller, camera, projection, action_state) in cam_q
+    for (cam_tfm, cam_gtfm, mut cam, mut controller, camera, projection, action_state) in cam_q
         .iter_mut()
         .filter(|(_, _, _, ctrl, _, _, _)| ctrl.enabled)
     {
-        if action_state.pressed(&RtsCameraAction::RotateMode) {
+        if controller.rotate_mode {
             continue;
         }
 
@@ -215,14 +239,18 @@ pub fn grab_pan(
             return;
         };
 
-        if action_state.just_pressed(&RtsCameraAction::GrabMode) && controller.lock_on_drag {
+        if action_state.just_pressed(&RtsCameraAction::GrabMode) {
+            controller.grab_mode = true;
+
             let Some(cursor_position) = primary_window.cursor_position() else {
                 return;
             };
 
-            *previous_mouse_grab_mode = primary_window.cursor_options.grab_mode;
-            primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
-            primary_window.cursor_options.visible = false;
+            if controller.lock_on_drag {
+                *previous_mouse_grab_mode = primary_window.cursor_options.grab_mode;
+                primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
+                primary_window.cursor_options.visible = false;
+            }
 
             if let Ok(cursor_ray) = camera.viewport_to_world(cam_gtfm, cursor_position) {
                 *ray_hit = ray_cast
@@ -239,10 +267,14 @@ pub fn grab_pan(
         }
 
         if action_state.just_released(&RtsCameraAction::GrabMode) {
+            controller.grab_mode = false;
+
             *ray_hit = None;
 
-            primary_window.cursor_options.grab_mode = *previous_mouse_grab_mode;
-            primary_window.cursor_options.visible = true;
+            if controller.lock_on_drag {
+                primary_window.cursor_options.grab_mode = *previous_mouse_grab_mode;
+                primary_window.cursor_options.visible = true;
+            }
         }
 
         if action_state.pressed(&RtsCameraAction::GrabMode) {
@@ -275,35 +307,44 @@ pub fn grab_pan(
 pub fn rotate(
     mut cam_q: Query<(
         &mut RtsCamera,
-        &RtsCameraControls,
+        &mut RtsCameraControls,
         &ActionState<RtsCameraAction>,
     )>,
     mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
     mut previous_mouse_grab_mode: Local<CursorGrabMode>,
 ) {
     if let Ok(mut primary_window) = primary_window_q.single_mut() {
-        for (mut cam, controller, action_state) in
+        for (mut cam, mut controller, action_state) in
             cam_q.iter_mut().filter(|(_, ctrl, _)| ctrl.enabled)
         {
-            if action_state.pressed(&RtsCameraAction::GrabMode) {
+            if controller.grab_mode {
                 continue;
             }
 
-            if action_state.just_pressed(&RtsCameraAction::RotateMode) && controller.lock_on_rotate
-            {
-                *previous_mouse_grab_mode = primary_window.cursor_options.grab_mode;
-                primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
-                primary_window.cursor_options.visible = false;
+            if action_state.just_pressed(&RtsCameraAction::RotateMode) {
+                controller.rotate_mode = true;
+
+                if controller.lock_on_rotate {
+                    *previous_mouse_grab_mode = primary_window.cursor_options.grab_mode;
+                    primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
+                    primary_window.cursor_options.visible = false;
+                }
             }
 
             if action_state.pressed(&RtsCameraAction::RotateMode) {
-                let Some(axis_data) = action_state.axis_data(&RtsCameraAction::Rotate) else {
+                let Some(axis_data) = action_state.axis_data(&RtsCameraAction::RotateAxis) else {
                     continue;
                 };
-
                 let value = axis_data.value / primary_window.width() * PI;
-
                 cam.target_focus.rotate_local_y(value);
+            } else if action_state.pressed(&RtsCameraAction::Rotate(true)) {
+                cam.target_focus.rotate_local_y(
+                    1.0 / primary_window.width() * PI * controller.key_rotate_speed,
+                );
+            } else if action_state.pressed(&RtsCameraAction::Rotate(false)) {
+                cam.target_focus.rotate_local_y(
+                    -1.0 / primary_window.width() * PI * controller.key_rotate_speed,
+                );
             }
 
             // if mouse_input.pressed(controller.button_rotate) {
@@ -333,8 +374,12 @@ pub fn rotate(
             // }
 
             if action_state.just_released(&RtsCameraAction::RotateMode) {
-                primary_window.cursor_options.grab_mode = *previous_mouse_grab_mode;
-                primary_window.cursor_options.visible = true;
+                controller.rotate_mode = false;
+
+                if controller.lock_on_rotate {
+                    primary_window.cursor_options.grab_mode = *previous_mouse_grab_mode;
+                    primary_window.cursor_options.visible = true;
+                }
             }
         }
     }
