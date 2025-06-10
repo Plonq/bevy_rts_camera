@@ -14,22 +14,70 @@ Bevy RTS Camera provides an RTS-style camera for Bevy Engine, to get your game u
 simple use cases, and does not try to cover advanced requirements.
 
 ## Features:
-
 - Pan, zoom, and rotation
 - Automatically follows whatever you mark as 'ground'
 - Smoothed movement
 - Customisable controls and other settings
 - Comes with optional controller, or you can control it yourself
+- Integrated with [leafwing-input-manager](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main)
 
 ## Default Controller
 
-A default controller is included with these default controls:
+You can 'edge pan' by moving the mouse to the edge of the screen.
 
-- Arrow Keys: pan
-- Mouse Wheel: zoom
-- Middle Mouse: rotate
 
-You can also 'edge pan' by moving the mouse to the edge of the screen.
+
+### Minimal Controller 
+
+A minimal controller is included with these default controls:
+
+- Pan: Arrow Keys
+- Zoom: Mouse Wheel
+- Rotate: Middle Right + Drag
+
+`RtsCameraAction::minimal_input_map()`
+```rust
+InputMap::default()
+    // Pan Action
+    .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
+    // Zoom Action
+    .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
+    // Rotate
+    .with(RtsCameraAction::RotateMode, MouseButton::Right)
+    .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+```
+
+
+### Full Controller
+`RtsCameraAction::full_input_map()`
+
+A full controller is included with these default controls:
+- Pan: Arrow Keys, WASD, Game Pad Button
+- Zoom: Mouse Wheel, Key (E,Q)
+- Rotate: Right Mouse + Drag, Key (R,F)
+- Grab: Middle Mouse + Drag
+
+```rust
+InputMap::default()
+    // Pan Action
+    .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
+    .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
+    .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::action_pad())
+    // Zoom Action
+    .with_axis(
+        RtsCameraAction::ZoomAxis,
+        VirtualAxis::new(KeyCode::KeyE, KeyCode::KeyQ),
+    )
+    .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
+    // Rotate
+    .with(RtsCameraAction::RotateMode, MouseButton::Right)
+    .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+    .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
+    .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
+    // Grab
+    .with(RtsCameraAction::GrabMode, MouseButton::Middle)
+    .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
+```
 
 ## Quick Start
 
@@ -44,7 +92,9 @@ Add `RtsCamera` (this will automatically add a `Camera3d` but you can add it man
 ```rust ignore
 commands.spawn((
     RtsCamera::default(),
-    RtsCameraControls::default(),  // Optional
+    RtsCameraAction::minimal_input_map(), // Required, You can put a custom map
+    // RtsCameraAction::full_input_map(), // a full version of input map
+    RtsCameraControls::default(), // Required
 ));
 ```
 

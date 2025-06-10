@@ -73,6 +73,6 @@ fn setup(
     commands.spawn((
         RtsCamera::default(),
         RtsCameraControls::default(),
-        RtsCameraAction::default_input_map(),
+        RtsCameraAction::minimal_input_map(),
     ));
 }

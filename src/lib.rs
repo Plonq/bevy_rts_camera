@@ -9,8 +9,6 @@ use bevy::prelude::*;
 
 pub use controller::*;
 
-use crate::controller::RtsCameraControlsPlugin;
-
 mod controller;
 
 const MAX_ANGLE: f32 = TAU / 5.0;
@@ -32,7 +30,6 @@ pub struct RtsCameraPlugin;
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RtsCameraControlsPlugin)
-            // .add_plugins(InputManagerPlugin::<RtsCameraAction>::default())
             .add_systems(PreUpdate, initialize)
             .add_systems(
                 Update,

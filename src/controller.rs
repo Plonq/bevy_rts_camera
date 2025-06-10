@@ -18,27 +18,110 @@ impl Plugin for RtsCameraControlsPlugin {
     }
 }
 
+/// Define all possible action that a RtsCamera can perform.
+///
+/// # used [leafwing-input-manager](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main)
+///
+/// ## Modes
+/// There are three mode for the RtsCamera
+/// - ### Normal Mode:
+///     In normal mode, the user can use:
+///     - `Pan` action to move the camera target on the XZ plane
+///     - `ZoomAxis` action to zoom near and far to the camera target
+///     - `Rotate(bool)` action to rotate orbit around the target.(`bool` specify rotation direction)
+/// - ### Rotate Mode:
+///     In rotate mode, user can send an `Axislike` `RotationAxis` to rotate the camera around target,
+///     this is used for taking mouse action, but it can also use other axis input.
+///     
+///     User can enter this mode by `RotateMode` action, a typical usage of this mode should be,
+///     use a certain key to enter rotate mode, and some other axis to rotate
+///     ```rust
+///     InputMap::default()
+///        .with(RtsCameraAction::RotateMode, MouseButton::Right)
+///        .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+///     ```
+/// - ### Grab Mode:
+///     Like in rotate mode, in Grab Mode, user can send an `DualAxislike` `GrabAxis` to grab move the camera,
+///     this is used for taking mouse action, but it can also use other axis input.
+///     
+///     User can enter this mode by `GrabMode` action, a typical usage of this mode should be,
+///     use a certain key to enter grab mode, and some other axis to rotate
+///     ```rust
+///     InputMap::default()
+///         .with(RtsCameraAction::GrabMode, MouseButton::Middle)
+///         .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
+///     ```
 #[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 pub enum RtsCameraAction {
+    /// `DualAxisLike` action for XZ plane movement
     #[actionlike(DualAxis)]
     Pan,
+    /// `AxisLike` action for zooming
     #[actionlike(Axis)]
     ZoomAxis,
 
     // Rotate
+    /// `ButtonLike` action for entering rotate mode
     RotateMode,
+    /// `AxisLike` action for rotating around the camera's target in rotation mode
     #[actionlike(Axis)]
     RotateAxis,
+    /// `ButtonLike` action for rotating around  the camera's origin
     Rotate(bool),
 
     // Grab
+    /// `ButtonLike` action for entering grab mode
     GrabMode,
+    /// `DualAxisLike` action for moving camera by grabbing point in ground
     #[actionlike(DualAxis)]
-    Grab,
+    GrabAxis,
 }
 
 impl RtsCameraAction {
-    pub fn default_input_map() -> InputMap<RtsCameraAction> {
+    /// A minimal input map
+    /// ```rust
+    /// InputMap::default()
+    ///     // Pan Action
+    ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
+    ///     // Zoom Action
+    ///     .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
+    ///     // Rotate
+    ///     .with(RtsCameraAction::RotateMode, MouseButton::Right)
+    ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+    /// ```
+    pub fn minimal_input_map() -> InputMap<RtsCameraAction> {
+        InputMap::default()
+            // Pan Action
+            .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
+            // Zoom Action
+            .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
+            // Rotate
+            .with(RtsCameraAction::RotateMode, MouseButton::Right)
+            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+    }
+    /// A fully featured input map
+    /// ```rust
+    /// InputMap::default()
+    ///     // Pan Action
+    ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
+    ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
+    ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::action_pad())
+    ///     // Zoom Action
+    ///     .with_axis(
+    ///         RtsCameraAction::ZoomAxis,
+    ///         VirtualAxis::new(KeyCode::KeyE, KeyCode::KeyQ),
+    ///     )
+    ///     .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
+    ///     // Rotate
+    ///     .with(RtsCameraAction::RotateMode, MouseButton::Right)
+    ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+    ///     .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
+    ///     .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
+    ///     // Grab
+    ///     .with(RtsCameraAction::GrabMode, MouseButton::Middle)
+    ///     .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
+    /// ```
+    pub fn full_input_map() -> InputMap<RtsCameraAction> {
         InputMap::default()
             // Pan Action
             .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
@@ -57,7 +140,7 @@ impl RtsCameraAction {
             .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
             // Grab
             .with(RtsCameraAction::GrabMode, MouseButton::Middle)
-            .with_dual_axis(RtsCameraAction::Grab, MouseMove::default())
+            .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
     }
 }
 
@@ -79,6 +162,7 @@ impl RtsCameraAction {
 ///         .spawn((
 ///             RtsCamera::default(),
 ///             RtsCameraControls::default(),
+///             RtsCameraAction::minimal_input_map(),
 ///         ));
 ///  }
 /// ```
@@ -90,9 +174,6 @@ pub struct RtsCameraControls {
     /// Whether to lock the mouse cursor in place while rotating.
     /// Defaults to `false`.
     pub lock_on_rotate: bool,
-    // /// The mouse button used to 'drag pan' the camera.
-    // /// Defaults to `None`.
-    // pub button_drag: Option<MouseButton>,
     /// Whether to lock the mouse cursor in place while dragging.
     /// Defaults to `false`.
     pub lock_on_drag: bool,
@@ -109,8 +190,12 @@ pub struct RtsCameraControls {
     /// Whether these controls are enabled.
     /// Defaults to `true`.
     pub enabled: bool,
-    pub grab_mode: bool,
+    /// Whether the controller is in rotate mode.
+    /// This is use to make sure rotate mode and grab mode don't collide
     pub rotate_mode: bool,
+    /// Whether the controller is in grab mode
+    /// This is use to make sure rotate mode and grab mode don't collide
+    pub grab_mode: bool,
 }
 
 impl Default for RtsCameraControls {
@@ -278,7 +363,7 @@ pub fn grab_pan(
         }
 
         if action_state.pressed(&RtsCameraAction::GrabMode) {
-            let mut mouse_delta = action_state.axis_pair(&RtsCameraAction::Grab);
+            let mut mouse_delta = action_state.axis_pair(&RtsCameraAction::GrabAxis);
 
             let mut multiplier = 1.0;
             let vp_size = camera.logical_viewport_size().unwrap();
@@ -346,32 +431,6 @@ pub fn rotate(
                     -1.0 / primary_window.width() * PI * controller.key_rotate_speed,
                 );
             }
-
-            // if mouse_input.pressed(controller.button_rotate) {
-            //     let mouse_delta = mouse_motion.read().map(|e| e.delta).sum::<Vec2>();
-            //     // Adjust based on window size, so that moving mouse entire width of window
-            //     // will be one half rotation (180 degrees)
-            //     let delta_x = mouse_delta.x / primary_window.width() * PI;
-            //     cam.target_focus.rotate_local_y(-delta_x);
-            // } else {
-            //     let left = if keys.pressed(controller.key_rotate_left) {
-            //         1.0
-            //     } else {
-            //         0.0
-            //     };
-            //     let right = if keys.pressed(controller.key_rotate_right) {
-            //         1.0
-            //     } else {
-            //         0.0
-            //     };
-
-            //     let delta = right - left;
-            //     if delta != 0.0 {
-            //         cam.target_focus.rotate_local_y(
-            //             delta / primary_window.width() * PI * controller.key_rotate_speed,
-            //         );
-            //     }
-            // }
 
             if action_state.just_released(&RtsCameraAction::RotateMode) {
                 controller.rotate_mode = false;

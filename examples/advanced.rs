@@ -102,7 +102,7 @@ Press T to toggle controls (K and L will still work)",
     commands.spawn((
         RtsCamera {
             // Increase min height (decrease max zoom)
-            // height_min: 10.0,
+            height_min: 10.0,
             // Increase max height (decrease min zoom)
             height_max: 50.0,
             // Change the angle of the camera to 35 degrees
@@ -114,14 +114,12 @@ Press T to toggle controls (K and L will still work)",
             // Change starting zoom level
             target_zoom: 0.2,
             // Disable dynamic angle (angle of camera will stay at `min_angle`)
-            // dynamic_angle: false,
+            dynamic_angle: false,
             ..default()
         },
         RtsCameraControls {
             // Keep the mouse cursor in place when rotating
             lock_on_rotate: true,
-            // Drag pan with middle click
-            // button_drag: Some(MouseButton::Middle),
             // Keep the mouse cursor in place when dragging
             lock_on_drag: true,
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
@@ -151,7 +149,7 @@ Press T to toggle controls (K and L will still work)",
             // Grab
             // Grab with Mouse
             .with(RtsCameraAction::GrabMode, MouseButton::Middle)
-            .with_dual_axis(RtsCameraAction::Grab, MouseMove::default()),
+            .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default()),
     ));
 }
 
