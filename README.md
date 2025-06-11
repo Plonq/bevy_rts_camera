@@ -33,10 +33,10 @@ A minimal controller is included with these default controls:
 
 - Pan: Arrow Keys
 - Zoom: Mouse Wheel
-- Rotate: Middle Right + Drag
+- Rotate: Right Mouse + Drag
 
 `RtsCameraAction::minimal_input_map()`
-```rust
+```rust ignore
 InputMap::default()
     // Pan Action
     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
@@ -57,7 +57,7 @@ A full controller is included with these default controls:
 - Rotate: Right Mouse + Drag, Key (R,F)
 - Grab: Middle Mouse + Drag
 
-```rust
+```rust ignore
 InputMap::default()
     // Pan Action
     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
@@ -92,9 +92,10 @@ Add `RtsCamera` (this will automatically add a `Camera3d` but you can add it man
 ```rust ignore
 commands.spawn((
     RtsCamera::default(),
-    RtsCameraAction::minimal_input_map(), // Required, You can put a custom map
-    // RtsCameraAction::full_input_map(), // a full version of input map
-    RtsCameraControls::default(), // Required
+    RtsCameraControls::default(), // Optional
+    RtsCameraAction::minimal_input_map(), // Minimal Control, Use along with RtsCamera Control
+    // RtsCameraAction::full_input_map(), // Full Control
+    // You can put a custom leafwing_input_manager::InputMap
 ));
 ```
 

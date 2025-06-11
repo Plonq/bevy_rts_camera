@@ -260,7 +260,7 @@ pub fn pan(
         }
 
         if delta.length_squared() == 0.0 {
-            // // Edge pan
+            // Edge pan
             if let Ok(primary_window) = primary_window_q.single() {
                 if let Some(cursor_position) = primary_window.cursor_position() {
                     let win_w = primary_window.width();
