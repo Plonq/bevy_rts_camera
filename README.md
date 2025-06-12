@@ -93,9 +93,9 @@ Add `RtsCamera` (this will automatically add a `Camera3d` but you can add it man
 commands.spawn((
     RtsCamera::default(),
     RtsCameraControls::default(), // Optional
-    RtsCameraAction::minimal_input_map(), // Minimal Control, Use along with RtsCamera Control
-    // RtsCameraAction::full_input_map(), // Full Control
-    // You can put a custom leafwing_input_manager::InputMap
+    RtsCameraAction::minimal_input_map(), // Minimal controls. Use along with `RtsCameraControls`
+    // RtsCameraAction::full_input_map(), // Full controls
+    // You can optionally use a custom `leafwing_input_manager::InputMap` instead
 ));
 ```
 
