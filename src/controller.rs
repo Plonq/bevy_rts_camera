@@ -113,7 +113,10 @@ impl RtsCameraAction {
     ///     )
     ///     .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
     ///     // Rotate
-    ///     .with(RtsCameraAction::RotateMode, MouseButton::Right)
+    ///     .with(
+    ///         RtsCameraAction::RotateMode,
+    ///         ButtonlikeChord::new([MouseButton::Left, MouseButton::Right]),
+    ///     )
     ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
     ///     .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
     ///     .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
@@ -134,7 +137,10 @@ impl RtsCameraAction {
             )
             .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
             // Rotate
-            .with(RtsCameraAction::RotateMode, MouseButton::Right)
+            .with(
+                RtsCameraAction::RotateMode,
+                ButtonlikeChord::new([MouseButton::Left, MouseButton::Right]),
+            )
             .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
             .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
             .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
