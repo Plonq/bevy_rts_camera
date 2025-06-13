@@ -86,7 +86,10 @@ impl RtsCameraAction {
     ///     // Zoom Action
     ///     .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
     ///     // Rotate
-    ///     .with(RtsCameraAction::RotateMode, MouseButton::Right)
+    ///     .with(
+    ///         RtsCameraAction::RotateMode,
+    ///         ButtonlikeChord::new([MouseButton::Left, MouseButton::Right]),
+    ///     )
     ///     .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
     /// ```
     pub fn minimal_input_map() -> InputMap<RtsCameraAction> {
@@ -96,7 +99,10 @@ impl RtsCameraAction {
             // Zoom Action
             .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
             // Rotate
-            .with(RtsCameraAction::RotateMode, MouseButton::Right)
+            .with(
+                RtsCameraAction::RotateMode,
+                ButtonlikeChord::new([MouseButton::Left, MouseButton::Right]),
+            )
             .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
     }
     /// A fully featured input map

@@ -33,7 +33,7 @@ A minimal controller is included with these default controls:
 
 - Pan: Arrow Keys
 - Zoom: Mouse Wheel
-- Rotate: Right Mouse + Drag
+- Rotate: Right Mouse + Left Mouse + Drag
 
 `RtsCameraAction::minimal_input_map()`
 ```rust ignore
@@ -43,8 +43,11 @@ InputMap::default()
     // Zoom Action
     .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
     // Rotate
-    .with(RtsCameraAction::RotateMode, MouseButton::Right)
-    .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+    .with(
+        RtsCameraAction::RotateMode,
+        ButtonlikeChord::new([MouseButton::Left, MouseButton::Right]),
+    )
+    .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
 ```
 
 
@@ -54,7 +57,7 @@ InputMap::default()
 A full controller is included with these default controls:
 - Pan: Arrow Keys, WASD, Game Pad Button
 - Zoom: Mouse Wheel, Key (E,Q)
-- Rotate: Right Mouse + Drag, Key (R,F)
+- Rotate: Right Mouse + Left Mouse + Drag, Key (R,F)
 - Grab: Middle Mouse + Drag
 
 ```rust ignore
