@@ -1,15 +1,18 @@
-//! A basic scene with some "terrain" and "units" to demonstrate how to set up a basic
+//! A basic scene with some "terrain" and "units"
+//! no bevy_rts_camera feature "controller"
+//! interface with RtsCamera Directly
 //! RTS camera.
 
 use bevy::prelude::*;
 
-use bevy_rts_camera::{Ground, RtsCamera, RtsCameraAction, RtsCameraControls, RtsCameraPlugin};
+use bevy_rts_camera::{Ground, RtsCamera, RtsCameraPlugin};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(RtsCameraPlugin)
         .add_systems(Startup, setup)
+        .add_systems(Update, update)
         .run();
 }
 
@@ -70,9 +73,19 @@ fn setup(
         )),
     ));
     // Camera
-    commands.spawn((
-        RtsCamera::default(),
-        RtsCameraControls::default(),
-        RtsCameraAction::minimal_input_map(),
-    ));
+    commands.spawn((RtsCamera {
+        min_angle: (20.0_f32).to_radians(),
+        dynamic_angle: false,
+        ..default()
+    },));
+}
+
+fn update(mut rts_camera: Single<&mut RtsCamera>, time: Res<Time>) {
+    // You can directly modify the target with target_foucs
+    rts_camera.target_focus.rotate_y(1.0 * time.delta_secs());
+
+    // Control zooming
+    rts_camera.target_zoom = time.elapsed_secs().sin() / 2.0 + 0.5;
+
+    rts_camera.target_angle = (time.elapsed_secs().sin() * 20.0 + 45.0).to_radians()
 }

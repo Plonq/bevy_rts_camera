@@ -7,11 +7,11 @@ use bevy::math::bounding::Aabb2d;
 use bevy::picking::mesh_picking::ray_cast::RayMeshHit;
 use bevy::prelude::*;
 
-pub use controller::RtsCameraControls;
-
-use crate::controller::RtsCameraControlsPlugin;
-
+#[cfg(feature = "controller")]
 mod controller;
+
+#[cfg(feature = "controller")]
+pub use controller::*;
 
 const MAX_ANGLE: f32 = TAU / 5.0;
 
@@ -31,21 +31,21 @@ pub struct RtsCameraPlugin;
 
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RtsCameraControlsPlugin)
-            .add_systems(PreUpdate, initialize)
-            .add_systems(
-                Update,
-                (
-                    follow_ground,
-                    snap_to_target,
-                    dynamic_angle,
-                    move_towards_target,
-                    apply_camera_bounds,
-                    update_camera_transform,
-                )
-                    .chain()
-                    .in_set(RtsCameraSystemSet),
-            );
+        #[cfg(feature = "controller")]
+        app.add_plugins(RtsCameraControlsPlugin);
+        app.add_systems(PreUpdate, initialize).add_systems(
+            Update,
+            (
+                follow_ground,
+                snap_to_target,
+                dynamic_angle,
+                move_towards_target,
+                apply_camera_bounds,
+                update_camera_transform,
+            )
+                .chain()
+                .in_set(RtsCameraSystemSet),
+        );
     }
 }
 
@@ -76,7 +76,7 @@ pub struct RtsCameraSystemSet;
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Copy, Clone, Debug)]
+#[derive(Component, Clone, Debug)]
 #[require(Camera3d)]
 pub struct RtsCamera {
     /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.
