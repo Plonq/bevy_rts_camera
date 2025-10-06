@@ -1,6 +1,6 @@
 [package]
 name = "bevy_rts_camera"
-version = "0.10.0"
+version = "0.11.0"
 authors = ["Plonq"]
 edition = "2021"
 description = "An RTS-style camera for Bevy"
@@ -13,7 +13,7 @@ readme = "README.md"
 exclude = ["assets/"]
 
 [dependencies]
-bevy = { version = "0.16", default-features = false, features = [
+bevy = { version = "0.17", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
     "bevy_window",
@@ -22,4 +22,4 @@ bevy = { version = "0.16", default-features = false, features = [
 ] }
 
 [dev-dependencies]
-bevy = { version = "0.16" }
+bevy = { version = "0.17" }
