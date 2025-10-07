@@ -1,3 +1,7 @@
+## 0.11
+
+- Update to Bevy 0.17
+
 ## 0.10
 
 - Update to Bevy 0.16

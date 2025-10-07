@@ -69,7 +69,8 @@ the possible configuration options.
 ## Version Compatibility
 
 | bevy | bevy_rts_camera |
-|------|-----------------|
+| ---- | --------------- |
+| 0.17 | 0.11            |
 | 0.16 | 0.10            |
 | 0.15 | 0.9             |
 | 0.14 | 0.8             |
