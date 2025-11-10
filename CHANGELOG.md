@@ -1,3 +1,7 @@
+## 0.11.1
+
+- Derive `Reflect` on `RtsCamera` and `RtsCameraControls` (#37)
+
 ## 0.11
 
 - Update to Bevy 0.17
