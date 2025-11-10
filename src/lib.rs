@@ -76,7 +76,7 @@ pub struct RtsCameraSystemSet;
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Copy, Clone, Debug)]
+#[derive(Component, Copy, Clone, Debug, Reflect)]
 #[require(Camera3d)]
 pub struct RtsCamera {
     /// The minimum height the camera can zoom in to, or the height of the camera at `1.0` zoom.

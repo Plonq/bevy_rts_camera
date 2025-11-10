@@ -39,7 +39,7 @@ impl Plugin for RtsCameraControlsPlugin {
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Debug, PartialEq, Clone)]
+#[derive(Component, Debug, PartialEq, Clone, Reflect)]
 pub struct RtsCameraControls {
     /// The key that will pan the camera up (or forward).
     /// Defaults to `KeyCode::ArrowUp`.
