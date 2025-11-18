@@ -90,7 +90,6 @@ pub struct RtsCameraControls {
     /// Whether these controls are enabled.
     /// Defaults to `true`.
     pub enabled: bool,
-
 }
 
 impl Default for RtsCameraControls {
@@ -111,8 +110,7 @@ impl Default for RtsCameraControls {
             edge_pan_restrict_to_viewport: false,
             pan_speed: 15.0,
             zoom_sensitivity: 1.0,
-            enabled: true,
-            
+            enabled: true,            
         }
     }
 }
