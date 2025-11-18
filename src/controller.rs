@@ -78,6 +78,9 @@ pub struct RtsCameraControls {
     /// of the window's height. Set to `0.0` to disable edge panning.
     /// Defaults to `0.05` (5%).
     pub edge_pan_width: f32,
+    /// Whether edge panning is relative to the camera's viewport or the entire window
+    /// Defaults to `false` (entire window)
+    pub edge_pan_restrict_to_viewport: bool,
     /// Speed of camera pan (either via keyboard controls or edge panning).
     /// Defaults to `15.0`.
     pub pan_speed: f32,
@@ -87,9 +90,7 @@ pub struct RtsCameraControls {
     /// Whether these controls are enabled.
     /// Defaults to `true`.
     pub enabled: bool,
-    /// Whether edge panning is relative to the camera's viewport or the entire window
-    /// Defaults to `false` (entire window)
-    pub edge_pan_restrict_to_viewport: bool,
+
 }
 
 impl Default for RtsCameraControls {
@@ -107,10 +108,11 @@ impl Default for RtsCameraControls {
             button_drag: None,
             lock_on_drag: false,
             edge_pan_width: 0.05,
+            edge_pan_restrict_to_viewport: false,
             pan_speed: 15.0,
             zoom_sensitivity: 1.0,
             enabled: true,
-            edge_pan_restrict_to_viewport: false,
+            
         }
     }
 }
