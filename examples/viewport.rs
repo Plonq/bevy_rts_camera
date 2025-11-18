@@ -81,7 +81,7 @@ fn setup(
             ..default()
         },
         Camera {
-            order:0,
+            order: 0,
             viewport: Some(Viewport {
                 // Start the viewport in the top left
                 physical_position: uvec2(0, 0),
@@ -97,9 +97,9 @@ fn setup(
         Camera3d::default(),
         Transform::from_xyz(0.0, 25.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
         Camera {
-            order:1,
+            order: 1,
             viewport: Some(Viewport {
-                 // Start the viewport in the top middle
+                // Start the viewport in the top middle
                 physical_position: uvec2(window.physical_width() / 2, 0),
                 // Have it take up the other half of the window
                 physical_size: uvec2(window.physical_width() / 2, window.physical_height()),
