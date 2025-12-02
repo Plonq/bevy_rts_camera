@@ -1,6 +1,6 @@
 //! The basic scene showcasing restricting edge panning to the camera's viewport
 
-use bevy::{camera::Viewport, math::VectorSpace, prelude::*, window::PrimaryWindow};
+use bevy::{camera::Viewport, prelude::*, window::PrimaryWindow};
 
 use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin};
 
