@@ -173,13 +173,14 @@ pub fn pan(
                     let mut cursor_position = cursor_position;
                     let mut pan_width = win_h * controller.edge_pan_width;
                     if controller.edge_pan_restrict_to_viewport {
+                        let scale = 1.0/primary_window.scale_factor();
                         if let Some(ref viewport) = b_cam.viewport {
                             let Vec2 {
                                 x: view_w,
                                 y: view_h,
-                            } = viewport.physical_size.as_vec2();
+                            } = viewport.physical_size.as_vec2() * scale;
                             pan_width = view_h * controller.edge_pan_width;
-                            cursor_position -= viewport.physical_position.as_vec2();
+                            cursor_position -= viewport.physical_position.as_vec2() * scale;
                             if cursor_position.x < 0.0
                                 || cursor_position.x > view_w
                                 || cursor_position.y < 0.0
