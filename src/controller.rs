@@ -78,6 +78,9 @@ pub struct RtsCameraControls {
     /// of the window's height. Set to `0.0` to disable edge panning.
     /// Defaults to `0.05` (5%).
     pub edge_pan_width: f32,
+    /// Whether edge panning is relative to the camera's viewport or the entire window
+    /// Defaults to `false` (entire window)
+    pub edge_pan_restrict_to_viewport: bool,
     /// Speed of camera pan (either via keyboard controls or edge panning).
     /// Defaults to `15.0`.
     pub pan_speed: f32,
@@ -104,6 +107,7 @@ impl Default for RtsCameraControls {
             button_drag: None,
             lock_on_drag: false,
             edge_pan_width: 0.05,
+            edge_pan_restrict_to_viewport: false,
             pan_speed: 15.0,
             zoom_sensitivity: 1.0,
             enabled: true,
@@ -130,13 +134,13 @@ pub fn zoom(
 }
 
 pub fn pan(
-    mut cam_q: Query<(&mut RtsCamera, &RtsCameraControls)>,
+    mut cam_q: Query<(&mut RtsCamera, &RtsCameraControls, &Camera)>,
     button_input: Res<ButtonInput<KeyCode>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time<Real>>,
 ) {
-    for (mut cam, controller) in cam_q.iter_mut().filter(|(_, ctrl)| ctrl.enabled) {
+    for (mut cam, controller, b_cam) in cam_q.iter_mut().filter(|(_, ctrl, _)| ctrl.enabled) {
         if controller
             .button_drag
             .is_some_and(|btn| mouse_input.pressed(btn))
@@ -164,9 +168,27 @@ pub fn pan(
         if delta.length_squared() == 0.0 && !mouse_input.pressed(controller.button_rotate) {
             if let Ok(primary_window) = primary_window_q.single() {
                 if let Some(cursor_position) = primary_window.cursor_position() {
-                    let win_w = primary_window.width();
-                    let win_h = primary_window.height();
-                    let pan_width = win_h * controller.edge_pan_width;
+                    let mut win_w = primary_window.width();
+                    let mut win_h = primary_window.height();
+                    let mut cursor_position = cursor_position;
+                    let mut pan_width = win_h * controller.edge_pan_width;
+                    if controller.edge_pan_restrict_to_viewport {
+                        if let Some(ref viewport) = b_cam.logical_viewport_rect() {
+                            let view_w = viewport.width();
+                            let view_h = viewport.height();
+                            pan_width = view_h * controller.edge_pan_width;
+                            cursor_position -= viewport.min;
+                            if cursor_position.x < 0.0
+                                || cursor_position.x > view_w
+                                || cursor_position.y < 0.0
+                                || cursor_position.y > view_h
+                            {
+                                continue;
+                            }
+                            win_h = view_h;
+                            win_w = view_w;
+                        }
+                    }
                     // Pan left
                     if cursor_position.x < pan_width {
                         delta += Vec3::from(cam.target_focus.left())
