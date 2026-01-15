@@ -17,7 +17,8 @@ bevy = { version = "0.18", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
     "bevy_window",
-    "bevy_picking"
+    "bevy_picking",
+    "mesh_picking"
 ] }
 
 [dev-dependencies]
