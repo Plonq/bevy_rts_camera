@@ -1,3 +1,7 @@
+## 0.13
+
+- Update to Bevy 0.18
+
 ## 0.12
 
 - Add option to restrict edge panning to the viewport instead of the window (#38)
