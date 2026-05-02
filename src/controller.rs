@@ -2,7 +2,7 @@
 
 use crate::{Ground, RtsCamera, RtsCameraSystemSet};
 use bevy::prelude::*;
-use bevy::window::{CursorGrabMode, PrimaryWindow};
+use bevy::window::{CursorGrabMode, CursorOptions, PrimaryWindow};
 use leafwing_input_manager::prelude::*;
 use std::f32::consts::PI;
 
@@ -178,7 +178,7 @@ impl RtsCameraAction {
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Debug, PartialEq, Clone)]
+#[derive(Component, Debug, PartialEq, Clone, Reflect)]
 pub struct RtsCameraControls {
     /// How fast the keys will rotate the camera.
     /// Defaults to `16.0`.
@@ -193,6 +193,9 @@ pub struct RtsCameraControls {
     /// of the window's height. Set to `0.0` to disable edge panning.
     /// Defaults to `0.05` (5%).
     pub edge_pan_width: f32,
+    /// Whether edge panning is relative to the camera's viewport or the entire window
+    /// Defaults to `false` (entire window)
+    pub edge_pan_restrict_to_viewport: bool,
     /// Speed of camera pan (either via keyboard controls or edge panning).
     /// Defaults to `15.0`.
     pub pan_speed: f32,
@@ -217,6 +220,7 @@ impl Default for RtsCameraControls {
             lock_on_rotate: false,
             lock_on_drag: false,
             edge_pan_width: 0.05,
+            edge_pan_restrict_to_viewport: false,
             pan_speed: 15.0,
             zoom_sensitivity: 1.0,
             enabled: true,
@@ -249,12 +253,14 @@ pub fn pan(
     mut cam_q: Query<(
         &mut RtsCamera,
         &RtsCameraControls,
+        &Camera,
         &ActionState<RtsCameraAction>,
     )>,
     primary_window_q: Query<&Window, With<PrimaryWindow>>,
     time: Res<Time<Real>>,
 ) {
-    for (mut cam, controller, action_state) in cam_q.iter_mut().filter(|(_, ctrl, _)| ctrl.enabled)
+    for (mut cam, controller, b_cam, action_state) in
+        cam_q.iter_mut().filter(|(_, ctrl, _, _)| ctrl.enabled)
     {
         if action_state.pressed(&RtsCameraAction::GrabMode)
             | action_state.pressed(&RtsCameraAction::RotateMode)
@@ -275,9 +281,27 @@ pub fn pan(
             // Edge pan
             if let Ok(primary_window) = primary_window_q.single() {
                 if let Some(cursor_position) = primary_window.cursor_position() {
-                    let win_w = primary_window.width();
-                    let win_h = primary_window.height();
-                    let pan_width = win_h * controller.edge_pan_width;
+                    let mut win_w = primary_window.width();
+                    let mut win_h = primary_window.height();
+                    let mut cursor_position = cursor_position;
+                    let mut pan_width = win_h * controller.edge_pan_width;
+                    if controller.edge_pan_restrict_to_viewport {
+                        if let Some(ref viewport) = b_cam.logical_viewport_rect() {
+                            let view_w = viewport.width();
+                            let view_h = viewport.height();
+                            pan_width = view_h * controller.edge_pan_width;
+                            cursor_position -= viewport.min;
+                            if cursor_position.x < 0.0
+                                || cursor_position.x > view_w
+                                || cursor_position.y < 0.0
+                                || cursor_position.y > view_h
+                            {
+                                continue;
+                            }
+                            win_h = view_h;
+                            win_w = view_w;
+                        }
+                    }
                     // Pan left
                     if cursor_position.x < pan_width {
                         delta += Vec3::from(cam.target_focus.left())
@@ -321,7 +345,8 @@ pub fn grab_pan(
     mut ray_cast: MeshRayCast,
     mut ray_hit: Local<Option<Vec3>>,
     ground_q: Query<Entity, With<Ground>>,
-    mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
+    primary_window: Single<&mut Window, With<PrimaryWindow>>,
+    mut primary_cursor_options: Single<&mut CursorOptions, With<PrimaryWindow>>,
     mut previous_mouse_grab_mode: Local<CursorGrabMode>,
 ) {
     for (cam_tfm, cam_gtfm, mut cam, mut controller, camera, projection, action_state) in cam_q
@@ -332,9 +357,9 @@ pub fn grab_pan(
             continue;
         }
 
-        let Ok(mut primary_window) = primary_window_q.single_mut() else {
-            return;
-        };
+        // let Ok(mut primary_window) = primary_window.single_mut() else {
+        //     return;
+        // };
 
         if action_state.just_pressed(&RtsCameraAction::GrabMode) {
             controller.grab_mode = true;
@@ -344,9 +369,9 @@ pub fn grab_pan(
             };
 
             if controller.lock_on_drag {
-                *previous_mouse_grab_mode = primary_window.cursor_options.grab_mode;
-                primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
-                primary_window.cursor_options.visible = false;
+                *previous_mouse_grab_mode = primary_cursor_options.grab_mode;
+                primary_cursor_options.grab_mode = CursorGrabMode::Locked;
+                primary_cursor_options.visible = false;
             }
 
             if let Ok(cursor_ray) = camera.viewport_to_world(cam_gtfm, cursor_position) {
@@ -369,8 +394,8 @@ pub fn grab_pan(
             *ray_hit = None;
 
             if controller.lock_on_drag {
-                primary_window.cursor_options.grab_mode = *previous_mouse_grab_mode;
-                primary_window.cursor_options.visible = true;
+                primary_cursor_options.grab_mode = *previous_mouse_grab_mode;
+                primary_cursor_options.visible = true;
             }
         }
 
@@ -408,9 +433,10 @@ pub fn rotate(
         &ActionState<RtsCameraAction>,
     )>,
     mut primary_window_q: Query<&mut Window, With<PrimaryWindow>>,
+    mut primary_cursor_options: Single<&mut CursorOptions, With<PrimaryWindow>>,
     mut previous_mouse_grab_mode: Local<CursorGrabMode>,
 ) {
-    if let Ok(mut primary_window) = primary_window_q.single_mut() {
+    if let Ok(primary_window) = primary_window_q.single_mut() {
         for (mut cam, mut controller, action_state) in
             cam_q.iter_mut().filter(|(_, ctrl, _)| ctrl.enabled)
         {
@@ -422,9 +448,9 @@ pub fn rotate(
                 controller.rotate_mode = true;
 
                 if controller.lock_on_rotate {
-                    *previous_mouse_grab_mode = primary_window.cursor_options.grab_mode;
-                    primary_window.cursor_options.grab_mode = CursorGrabMode::Locked;
-                    primary_window.cursor_options.visible = false;
+                    *previous_mouse_grab_mode = primary_cursor_options.grab_mode;
+                    primary_cursor_options.grab_mode = CursorGrabMode::Locked;
+                    primary_cursor_options.visible = false;
                 }
             }
 
@@ -451,8 +477,8 @@ pub fn rotate(
                 controller.rotate_mode = false;
 
                 if controller.lock_on_rotate {
-                    primary_window.cursor_options.grab_mode = *previous_mouse_grab_mode;
-                    primary_window.cursor_options.visible = true;
+                    primary_cursor_options.grab_mode = *previous_mouse_grab_mode;
+                    primary_cursor_options.visible = true;
                 }
             }
         }

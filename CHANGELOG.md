@@ -1,3 +1,19 @@
+## 0.13
+
+- Update to Bevy 0.18
+
+## 0.12
+
+- Add option to restrict edge panning to the viewport instead of the window (#38)
+
+## 0.11.1
+
+- Derive `Reflect` on `RtsCamera` and `RtsCameraControls` (#37)
+
+## 0.11
+
+- Update to Bevy 0.17
+
 ## 0.10
 
 - Update to Bevy 0.16
