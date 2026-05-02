@@ -35,7 +35,7 @@ impl Plugin for RtsCameraControlsPlugin {
 ///     
 ///     User can enter this mode by `RotateMode` action, a typical usage of this mode should be,
 ///     use a certain key to enter rotate mode, and some other axis to rotate
-///     ```no_run
+///     ```ignore
 ///     InputMap::default()
 ///        .with(RtsCameraAction::RotateMode, MouseButton::Right)
 ///        .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
@@ -46,7 +46,7 @@ impl Plugin for RtsCameraControlsPlugin {
 ///     
 ///     User can enter this mode by `GrabMode` action, a typical usage of this mode should be,
 ///     use a certain key to enter grab mode, and some other axis to move
-///     ```no_run
+///     ```ignore
 ///     InputMap::default()
 ///         .with(RtsCameraAction::GrabMode, MouseButton::Middle)
 ///         .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
@@ -79,7 +79,7 @@ pub enum RtsCameraAction {
 
 impl RtsCameraAction {
     /// A minimal input map
-    /// ```no_run
+    /// ```ignore
     /// InputMap::default()
     ///     // Pan Action
     ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
@@ -106,7 +106,7 @@ impl RtsCameraAction {
             .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
     }
     /// A fully featured input map
-    /// ```no_run
+    /// ```ignore
     /// InputMap::default()
     ///     // Pan Action
     ///     .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
@@ -159,7 +159,7 @@ impl RtsCameraAction {
 /// Optional camera controller. If you want to use an input manager, don't use this and instead
 /// control the camera yourself by updating `RtsCamera.target_focus` and `RtsCamera.target_zoom`.
 /// # Example
-/// ```no_run
+/// ```ignore
 /// # use bevy::prelude::*;
 /// # use bevy_rts_camera::{RtsCameraPlugin, RtsCamera, RtsCameraControls};
 /// # fn main() {
