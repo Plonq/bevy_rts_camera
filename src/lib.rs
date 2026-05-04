@@ -11,7 +11,7 @@ use bevy::prelude::*;
 mod controller;
 
 #[cfg(feature = "controller")]
-pub use controller::*;
+pub use controller::{RtsCameraAction, RtsCameraControls};
 
 const MAX_ANGLE: f32 = TAU / 5.0;
 
@@ -32,7 +32,7 @@ pub struct RtsCameraPlugin;
 impl Plugin for RtsCameraPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(feature = "controller")]
-        app.add_plugins(RtsCameraControlsPlugin);
+        app.add_plugins(controller::RtsCameraControlsPlugin);
         app.add_systems(PreUpdate, initialize).add_systems(
             Update,
             (

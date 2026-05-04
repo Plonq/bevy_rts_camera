@@ -6,6 +6,7 @@ use bevy::window::{CursorGrabMode, CursorOptions, PrimaryWindow};
 use leafwing_input_manager::prelude::*;
 use std::f32::consts::PI;
 
+/// Bevy plugin that provide input handling for RTS camera control
 pub struct RtsCameraControlsPlugin;
 
 impl Plugin for RtsCameraControlsPlugin {
@@ -25,32 +26,32 @@ impl Plugin for RtsCameraControlsPlugin {
 /// ## Modes
 /// There are three mode for the `RtsCamera`
 /// - ### Normal Mode:
-///     In normal mode, the user can use:
-///     - `Pan` action to move the camera target on the XZ plane
-///     - `ZoomAxis` action to zoom near and far to the camera target
-///     - `Rotate(bool)` action to rotate orbit around the target.(`bool` specify rotation direction)
+///   In normal mode, the user can use:
+///   - `Pan` action to move the camera target on the XZ plane
+///   - `ZoomAxis` action to zoom near and far to the camera target
+///   - `Rotate(bool)` action to rotate orbit around the target.(`bool` specify rotation direction)
 /// - ### Rotate Mode:
-///     In rotate mode, user can send an `Axislike` `RotationAxis` to rotate the camera around target,
-///     this is used for taking mouse action, but it can also use other axis input.
+///   In rotate mode, user can send an `Axislike` `RotationAxis` to rotate the camera around target,
+///   this is used for taking mouse action, but it can also use other axis input.
 ///     
-///     User can enter this mode by `RotateMode` action, a typical usage of this mode should be,
-///     use a certain key to enter rotate mode, and some other axis to rotate
-///     ```ignore
-///     InputMap::default()
-///        .with(RtsCameraAction::RotateMode, MouseButton::Right)
-///        .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
-///     ```
+///   User can enter this mode by `RotateMode` action, a typical usage of this mode should be,
+///   use a certain key to enter rotate mode, and some other axis to rotate
+///   ```ignore
+///   InputMap::default()
+///      .with(RtsCameraAction::RotateMode, MouseButton::Right)
+///      .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X)
+///   ```
 /// - ### Grab Mode:
-///     Like in rotate mode, in Grab Mode, user can send an `DualAxislike` `GrabAxis` to grab move the camera,
-///     this is used for taking mouse action, but it can also use other axis input.
-///     
-///     User can enter this mode by `GrabMode` action, a typical usage of this mode should be,
-///     use a certain key to enter grab mode, and some other axis to move
-///     ```ignore
-///     InputMap::default()
-///         .with(RtsCameraAction::GrabMode, MouseButton::Middle)
-///         .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
-///     ```
+///   Like in rotate mode, in Grab Mode, user can send an `DualAxislike` `GrabAxis` to grab move the camera,
+///   this is used for taking mouse action, but it can also use other axis input.
+///   
+///   User can enter this mode by `GrabMode` action, a typical usage of this mode should be,
+///   use a certain key to enter grab mode, and some other axis to move
+///   ```ignore
+///   InputMap::default()
+///       .with(RtsCameraAction::GrabMode, MouseButton::Middle)
+///       .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default())
+///   ```
 #[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 pub enum RtsCameraAction {
     /// `DualAxisLike` action for XZ plane movement
@@ -332,6 +333,7 @@ pub fn pan(
     }
 }
 
+#[allow(clippy::type_complexity)]
 pub fn grab_pan(
     mut cam_q: Query<(
         &Transform,
