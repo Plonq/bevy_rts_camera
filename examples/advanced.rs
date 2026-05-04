@@ -5,7 +5,10 @@ use std::f32::consts::TAU;
 
 use bevy::prelude::*;
 
-use bevy_rts_camera::{Ground, RtsCamera, RtsCameraControls, RtsCameraPlugin, RtsCameraSystemSet};
+use bevy_rts_camera::{
+    Ground, RtsCamera, RtsCameraAction, RtsCameraControls, RtsCameraPlugin, RtsCameraSystemSet,
+};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()
@@ -99,7 +102,7 @@ Press T to toggle controls (K and L will still work)",
     commands.spawn((
         RtsCamera {
             // Increase min height (decrease max zoom)
-            // height_min: 10.0,
+            height_min: 10.0,
             // Increase max height (decrease min zoom)
             height_max: 50.0,
             // Change the angle of the camera to 35 degrees
@@ -111,29 +114,42 @@ Press T to toggle controls (K and L will still work)",
             // Change starting zoom level
             target_zoom: 0.2,
             // Disable dynamic angle (angle of camera will stay at `min_angle`)
-            // dynamic_angle: false,
+            dynamic_angle: false,
             ..default()
         },
         RtsCameraControls {
-            // Change pan controls to WASD
-            key_up: KeyCode::KeyW,
-            key_down: KeyCode::KeyS,
-            key_left: KeyCode::KeyA,
-            key_right: KeyCode::KeyD,
-            // Rotate the camera with right click
-            button_rotate: MouseButton::Right,
             // Keep the mouse cursor in place when rotating
             lock_on_rotate: true,
-            // Drag pan with middle click
-            button_drag: Some(MouseButton::Middle),
             // Keep the mouse cursor in place when dragging
             lock_on_drag: true,
             // Change the width of the area that triggers edge pan. 0.1 is 10% of the window height.
             edge_pan_width: 0.1,
-            // Increase pan speed
-            pan_speed: 25.0,
             ..default()
         },
+        InputMap::default()
+            // Pan Action
+            // you can add multiple dual axis
+            .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::wasd())
+            .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::arrow_keys())
+            .with_dual_axis(RtsCameraAction::Pan, VirtualDPad::action_pad())
+            // Zoom Action
+            // you can create your own axis
+            .with_axis(
+                RtsCameraAction::ZoomAxis,
+                VirtualAxis::new(KeyCode::KeyE, KeyCode::KeyQ),
+            )
+            .with_axis(RtsCameraAction::ZoomAxis, MouseScrollAxis::Y)
+            // Rotate
+            // Rotate with Mouse
+            .with(RtsCameraAction::RotateMode, MouseButton::Right)
+            .with_axis(RtsCameraAction::RotateAxis, MouseMoveAxis::X.inverted())
+            // Rotate with Button
+            .with(RtsCameraAction::Rotate(true), KeyCode::KeyR)
+            .with(RtsCameraAction::Rotate(false), KeyCode::KeyF)
+            // Grab
+            // Grab with Mouse
+            .with(RtsCameraAction::GrabMode, MouseButton::Middle)
+            .with_dual_axis(RtsCameraAction::GrabAxis, MouseMove::default()),
     ));
 }
 
