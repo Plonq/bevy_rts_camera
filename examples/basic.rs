@@ -59,7 +59,7 @@ fn setup(
     commands.spawn((
         DirectionalLight {
             illuminance: 1000.0,
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
         Transform::from_rotation(Quat::from_euler(
