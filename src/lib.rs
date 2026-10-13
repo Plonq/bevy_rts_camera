@@ -3,7 +3,6 @@
 
 use std::f32::consts::TAU;
 
-use bevy::math::bounding::Aabb2d;
 use bevy::picking::mesh_picking::ray_cast::RayMeshHit;
 use bevy::prelude::*;
 
@@ -315,7 +314,6 @@ fn ease_in_circular(x: f32) -> f32 {
 
 #[cfg(test)]
 mod tests {
-    use bevy::math::bounding::Aabb2d;
 
     use super::*;
 
